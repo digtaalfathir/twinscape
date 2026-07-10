@@ -172,6 +172,7 @@ function buildFromScene(s, name) {
 
   (s.walls || []).forEach((d) => built.add(buildWall(d)));
   (s.floors || []).forEach((d) => built.add(buildFloor(d)));
+  (s.texts || []).forEach((d) => built.add(makeTextSprite(d)));
   (s.pins || []).forEach((d) => addPinDevice(d));
   (s.models || []).forEach((d) => addModel(d));
 
@@ -202,18 +203,37 @@ function buildWall(d) {
   const g = new THREE.Group();
   const mat = new THREE.MeshStandardMaterial({ color: new THREE.Color(d.color || "#8fa3c4"), roughness: 0.6, metalness: 0.12, envMapIntensity: 0.9 });
   const pts = d.points || [];
-  const pairs = [];
-  for (let i = 0; i < pts.length - 1; i++) pairs.push([pts[i], pts[i + 1]]);
-  if (d.closed && pts.length > 2) pairs.push([pts[pts.length - 1], pts[0]]);
+  const openings = d.openings || [];
   const H = d.height || 3, T = d.thickness || 0.15;
-  pairs.forEach(([a, b]) => {
-    const dx = b[0] - a[0], dz = b[1] - a[1], len = Math.hypot(dx, dz);
-    if (len < 1e-3) return;
-    const m = new THREE.Mesh(new THREE.BoxGeometry(len + T, H, T), mat);
-    m.position.set((a[0] + b[0]) / 2, H / 2, (a[1] + b[1]) / 2);
-    m.rotation.y = -Math.atan2(dz, dx);
-    m.castShadow = true; m.receiveShadow = true;
-    g.add(m);
+  const segs = [];
+  for (let i = 0; i < pts.length - 1; i++) segs.push(i);
+  if (d.closed && pts.length > 2) segs.push(pts.length - 1);
+  segs.forEach((i) => {
+    const a = i < pts.length - 1 ? pts[i] : pts[pts.length - 1];
+    const b = i < pts.length - 1 ? pts[i + 1] : pts[0];
+    const dx = b[0] - a[0], dz = b[1] - a[1], L = Math.hypot(dx, dz);
+    if (L < 1e-3) return;
+    const ux = dx / L, uz = dz / L, ang = -Math.atan2(dz, dx);
+    const add = (s, e, y0, y1) => {
+      const len = e - s; if (len < 1e-3 || y1 - y0 < 1e-3) return;
+      const mid = (s + e) / 2;
+      const m = new THREE.Mesh(new THREE.BoxGeometry(len, y1 - y0, T), mat);
+      m.position.set(a[0] + ux * mid, (y0 + y1) / 2, a[1] + uz * mid);
+      m.rotation.y = ang; m.castShadow = true; m.receiveShadow = true;
+      g.add(m);
+    };
+    const ops = openings.filter((o) => o.seg === i).sort((p, q) => p.dist - q.dist);
+    if (!ops.length) { add(-T / 2, L + T / 2, 0, H); return; }
+    let cur = 0;
+    ops.forEach((op) => {
+      const os = Math.max(0, op.dist - op.width / 2), oe = Math.min(L, op.dist + op.width / 2);
+      if (os > cur) add(cur === 0 ? -T / 2 : cur, os, 0, H);
+      const top = Math.min(H, op.top ?? H), sill = Math.max(0, op.sill ?? 0);
+      if (top < H) add(os, oe, top, H);
+      if (sill > 0) add(os, oe, 0, sill);
+      cur = oe;
+    });
+    if (cur < L) add(cur, L + T / 2, 0, H);
   });
   return g;
 }
@@ -227,9 +247,31 @@ function buildFloor(d) {
   });
   const m = new THREE.Mesh(new THREE.PlaneGeometry(d.w, d.d), mat);
   m.rotation.x = -Math.PI / 2;
-  m.position.set(d.x, d.type === "green" ? 0.03 : 0.02, d.z);  // green painted slightly above concrete
+  m.position.set(d.x, 0.02 + (d.order || 0) * 0.006, d.z);   // order = which floor sits in front
+  m.renderOrder = d.order || 0;
   m.receiveShadow = true;
   return m;
+}
+
+// text label (sprite) — identical to Scene Builder
+function makeTextSprite(d) {
+  const text = d.text || "Teks";
+  const fpx = 64;
+  const probe = document.createElement("canvas").getContext("2d");
+  probe.font = `700 ${fpx}px Inter, Arial, sans-serif`;
+  const cw = Math.ceil(probe.measureText(text).width) + 28, ch = fpx + 24;
+  const cv = document.createElement("canvas"); cv.width = cw; cv.height = ch;
+  const ctx = cv.getContext("2d");
+  ctx.font = `700 ${fpx}px Inter, Arial, sans-serif`;
+  ctx.textAlign = "center"; ctx.textBaseline = "middle";
+  ctx.lineWidth = 6; ctx.strokeStyle = "rgba(5,7,15,0.85)"; ctx.strokeText(text, cw / 2, ch / 2);
+  ctx.fillStyle = d.color || "#e2e8f0"; ctx.fillText(text, cw / 2, ch / 2);
+  const tex = new THREE.CanvasTexture(cv); tex.colorSpace = THREE.SRGBColorSpace;
+  const spr = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, transparent: true, depthWrite: false }));
+  const hgt = d.size || 1;
+  spr.scale.set(hgt * (cw / ch), hgt, 1);
+  spr.position.set(d.x, d.y ?? 1.6, d.z);
+  return spr;
 }
 
 // =====================================================================

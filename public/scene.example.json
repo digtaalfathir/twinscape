@@ -2,11 +2,19 @@
   "version": 1,
   "units": "m",
   "walls": [
-    { "points": [[-10, -7], [10, -7], [10, 7], [-10, 7]], "height": 3, "thickness": 0.15, "color": "#8fa3c4", "closed": true }
+    { "points": [[-10, -7], [10, -7], [10, 7], [-10, 7]], "height": 3, "thickness": 0.15, "color": "#8fa3c4", "closed": true,
+      "openings": [
+        { "seg": 0, "dist": 6,  "width": 1.2, "top": 2.1, "sill": 0 },
+        { "seg": 0, "dist": 14, "width": 1.8, "top": 2.2, "sill": 1 },
+        { "seg": 2, "dist": 10, "width": 1.4, "top": 2.1, "sill": 0 }
+      ] }
   ],
   "floors": [
-    { "x": 0, "z": 0, "w": 20, "d": 14, "type": "concrete", "color": "#3a3f47" },
-    { "x": 0, "z": 0, "w": 2.4, "d": 14, "type": "green", "color": "#1f9e55" }
+    { "x": 0, "z": 0, "w": 20, "d": 14, "type": "concrete", "color": "#3a3f47", "order": 1 },
+    { "x": 0, "z": 0, "w": 2.4, "d": 14, "type": "green", "color": "#1f9e55", "order": 2 }
+  ],
+  "texts": [
+    { "x": 0, "y": 2.6, "z": 0, "text": "AREA PRODUKSI", "size": 1.1, "color": "#a5b4fc" }
   ],
   "models": [],
   "pins": [

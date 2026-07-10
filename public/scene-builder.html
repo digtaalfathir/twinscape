@@ -21,9 +21,11 @@
   <div class="tb">
     <h1>🧱 Scene Builder</h1>
     <button class="btn mode active" id="mSelect" data-mode="select">Pilih</button>
-    <button class="btn mode" id="mWall"   data-mode="wall">Tembok</button>
-    <button class="btn mode" id="mFloor"  data-mode="floor">Lantai</button>
-    <button class="btn mode" id="mPin"    data-mode="pin">Pin Device</button>
+    <button class="btn mode" id="mWall"  data-mode="wall">Tembok</button>
+    <button class="btn mode" id="mDoor"  data-mode="door">Pintu/Jendela</button>
+    <button class="btn mode" id="mFloor" data-mode="floor">Lantai</button>
+    <button class="btn mode" id="mPin"   data-mode="pin">Pin Device</button>
+    <button class="btn mode" id="mText"  data-mode="text">Teks</button>
     <span class="sep"></span>
     <button class="btn" id="btnModel">+ Model (.glb)</button>
     <button class="btn" id="btnDenah">Muat Denah</button>
@@ -33,7 +35,7 @@
     <button class="btn" id="btnNew">Baru</button>
     <button class="btn" id="btnLoad">Muat scene.json</button>
     <button class="btn primary" id="btnSave">💾 Simpan scene.json</button>
-    <a class="btn link" href="/floormap3d.html">Monitor 3D →</a>
+    <a class="btn link" href="/scene-view.html">Monitor 3D →</a>
     <input type="file" id="fileModel" accept=".glb,.gltf" hidden>
     <input type="file" id="fileDenah" accept="image/*" hidden>
     <input type="file" id="fileScene" accept=".json,application/json" hidden>
@@ -47,41 +49,91 @@
 
   <!-- ===== INSPECTOR ===== -->
   <aside class="insp">
+    <!-- Default area / size -->
+    <div class="sec" id="secArea">
+      <h3>Ukuran / Area Default</h3>
+      <div class="row"><label>Lebar (m)</label><input type="number" id="areaW" value="30" step="1" min="1"></div>
+      <div class="row"><label>Panjang (m)</label><input type="number" id="areaD" value="20" step="1" min="1"></div>
+      <div class="row"><label>Tampilkan guide</label><input type="checkbox" id="areaShow" checked></div>
+      <div class="row" style="gap:6px">
+        <button class="btn" id="btnWallBox" style="flex:1">Tembok kotak</button>
+        <button class="btn" id="btnFloorFull" style="flex:1">Lantai penuh</button>
+      </div>
+      <div class="hint">Kotak putus-putus = ukuran standar. Pakai tombol ini agar semua gedung seukuran & konsisten.</div>
+    </div>
+
     <!-- Wall props -->
     <div class="sec hidden" id="secWall">
       <h3>Tembok</h3>
       <div class="row"><label>Tinggi (m)</label><input type="number" id="wallH" value="3" step="0.1" min="0.2"></div>
       <div class="row"><label>Tebal (m)</label><input type="number" id="wallT" value="0.15" step="0.05" min="0.02"></div>
+      <div class="row"><label>Lurus (snap sudut)</label><input type="checkbox" id="wallStraight" checked></div>
       <div class="row"><label>Tutup loop</label><input type="checkbox" id="wallClosed" checked></div>
       <div class="row"><label>Warna</label><input type="color" id="wallColor" value="#8fa3c4"></div>
-      <div class="hint">Klik titik demi titik di lantai untuk membentuk tembok. <b>Enter</b>/klik-dobel = selesai. <b>Esc</b> = batal. Aktifkan "tutup loop" untuk tembok luar keliling.</div>
+      <div class="hint">Klik titik demi titik. <b>Enter</b>/dobel-klik = selesai · <b>Esc</b> batal. “Lurus” mengunci sudut ke kelipatan 15° dan menampilkan panjang/sudut.</div>
     </div>
 
-    <!-- Floor props -->
+    <!-- Door / window -->
+    <div class="sec hidden" id="secDoor">
+      <h3>Pintu / Jendela</h3>
+      <div class="row"><label>Lebar lubang (m)</label><input type="number" id="doorW" value="0.9" step="0.1" min="0.2"></div>
+      <div class="row"><label>Tinggi atas (m)</label><input type="number" id="doorTop" value="2.1" step="0.1" min="0.3"></div>
+      <div class="row"><label>Ambang bawah (m)</label><input type="number" id="doorSill" value="0" step="0.1" min="0"></div>
+      <div class="hint">Klik pada sebuah <b>tembok</b> untuk melubanginya. Ambang bawah <b>0</b> = pintu; <b>&gt;0</b> (mis. 1) = jendela.</div>
+    </div>
+
+    <!-- Floor defaults (create mode) -->
     <div class="sec hidden" id="secFloor">
-      <h3>Lantai</h3>
+      <h3>Lantai (baru)</h3>
       <div class="row"><label>Tipe</label>
         <select id="floorType">
           <option value="concrete">Beton pabrik</option>
           <option value="green">Jalur hijau</option>
           <option value="office">Office</option>
           <option value="custom">Custom…</option>
-        </select>
-      </div>
+        </select></div>
       <div class="row"><label>Warna custom</label><input type="color" id="floorColor" value="#3a3f47"></div>
-      <div class="hint">Klik <b>dua titik</b> (sudut ke sudut) untuk membuat kotak lantai. Buat beberapa area dengan tipe berbeda (mis. jalur hijau + beton).</div>
+      <div class="hint">Klik <b>2 sudut</b> untuk membuat kotak lantai.</div>
     </div>
 
-    <!-- Pin props -->
+    <!-- Floor selected (edit + layering) -->
+    <div class="sec hidden" id="secFloorSel">
+      <h3>Lantai Terpilih</h3>
+      <div class="row"><label>Tipe</label>
+        <select id="floorSelType">
+          <option value="concrete">Beton pabrik</option>
+          <option value="green">Jalur hijau</option>
+          <option value="office">Office</option>
+          <option value="custom">Custom…</option>
+        </select></div>
+      <div class="row"><label>Warna custom</label><input type="color" id="floorSelColor" value="#3a3f47"></div>
+      <div class="row"><label>Urutan</label>
+        <div class="tmodes">
+          <button class="btn" id="btnFloorBack">Ke Belakang</button>
+          <button class="btn" id="btnFloorFront">Ke Depan</button>
+        </div></div>
+      <div class="hint">“Ke Depan” menaruh lantai ini di atas yang lain (mis. jalur hijau di atas beton).</div>
+    </div>
+
+    <!-- Pin -->
     <div class="sec hidden" id="secPin">
       <h3>Pin Device</h3>
       <div class="row"><label>IP</label><input type="text" id="pinIp" list="ipList" placeholder="172.19.88.x"></div>
       <div class="row"><label>Label</label><input type="text" id="pinLabel" placeholder="opsional"></div>
       <datalist id="ipList"></datalist>
-      <div class="hint">Klik di lantai untuk menaruh titik status. Pin ber-IP akan menyala hijau/merah sesuai status live di dashboard.</div>
+      <div class="hint">Klik di lantai untuk menaruh titik status. Pin ber-IP menyala hijau/merah di dashboard.</div>
     </div>
 
-    <!-- Model props (selected) -->
+    <!-- Text -->
+    <div class="sec hidden" id="secText">
+      <h3>Teks</h3>
+      <div class="row"><label>Isi</label><input type="text" id="textContent" placeholder="mis. Area Produksi"></div>
+      <div class="row"><label>Ukuran (m)</label><input type="number" id="textSize" value="1" step="0.1" min="0.2"></div>
+      <div class="row"><label>Warna</label><input type="color" id="textColor" value="#e2e8f0"></div>
+      <div class="hint">Ketik isi lalu klik di lantai untuk menaruh. Pilih teks yang ada untuk mengubah isinya.</div>
+    </div>
+
+    <!-- Model selected -->
     <div class="sec hidden" id="secModel">
       <h3>Model Terpilih</h3>
       <div class="row"><label>Nama</label><input type="text" id="modelName" placeholder="mis. Mesin Inject 1"></div>
@@ -92,9 +144,17 @@
           <button class="btn active" id="tmMove" data-tm="translate">Geser</button>
           <button class="btn" id="tmRot" data-tm="rotate">Putar</button>
           <button class="btn" id="tmScl" data-tm="scale">Skala</button>
-        </div>
+        </div></div>
+      <div class="warn">Pastikan file model juga ada di <b>public/models/</b> sesuai <b>Path</b>, agar dashboard bisa memuatnya.</div>
+    </div>
+
+    <!-- Generic actions -->
+    <div class="sec hidden" id="secActions">
+      <h3>Aksi Objek</h3>
+      <div class="row" style="gap:6px">
+        <button class="btn" id="btnDup" style="flex:1">Duplikat (Ctrl+D)</button>
+        <button class="btn danger" id="btnDel" style="flex:1">Hapus</button>
       </div>
-      <div class="warn">Pastikan file model juga ada di <b>public/models/</b> dengan nama sesuai <b>Path</b>, agar dashboard runtime bisa memuatnya.</div>
     </div>
 
     <!-- Denah aid -->
@@ -135,14 +195,13 @@
 
   <div id="toast"></div>
   <script>
-    // Backstop: if the module never finishes init (parse/link failure), tell the user where to look.
     window.addEventListener("load", function () {
       setTimeout(function () {
         if (!window.__sbReady && !document.getElementById("fatal")) {
           var v = document.getElementById("view") || document.body;
           var d = document.createElement("div");
           d.style.cssText = "position:absolute;inset:0;z-index:99;background:rgba(10,14,26,.96);color:#fca5a5;padding:22px;font:13px/1.6 ui-monospace,monospace;white-space:pre-wrap";
-          d.textContent = "Scene Builder tidak selesai init dalam 5 detik.\n\nBuka Console browser (F12 → Console) dan kirim baris error MERAH pertama ke saya.";
+          d.textContent = "Scene Builder tidak selesai init dalam 5 detik.\n\nBuka Console (F12) dan kirim baris error MERAH pertama ke saya.";
           v.appendChild(d);
         }
       }, 5000);
