@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<!-- =====================================================================
+     v2 — Cisco-style 3D monitoring (STANDALONE, single file)
+     PARKIR di unused/. Untuk MENGAKTIFKAN: salin file ini ke folder public/
+     lalu buka http://<host>:10101/v2.html (butuh server jalan agar
+     /vendor/three dan /ws bisa diakses).
+
+     Isi: 1 tempat, 1 scene, 2 titik device. Flat/clean (tanpa bloom),
+     patokan tampilan = Cisco Spaces. Semua (scene + gaya + logika) di sini.
+
+     ============ CARA PIN NYAMBUNG KE DEVICE ASLI ============
+     Jembatannya = IP. Tiap device di bawah punya field `ip`. Server mengirim
+     daftar device live via WebSocket /ws (tiap item punya `ip` + `status`).
+     Kode mencocokkan device.ip === pin.ip → mewarnai pin (hijau UP/merah DOWN).
+     Mau ganti device yang dipantau? Cukup ubah `ip` di array DEVICES.
+     ===================================================================== -->
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>v2 — 3D Monitoring (Cisco style)</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    *{margin:0;padding:0;box-sizing:border-box}
+    :root{--up:#22c55e;--down:#ef4444;--accent:#6366f1;--txt:#e8eef8;--dim:#8ea0bd}
+    html,body{height:100%}
+    body{font-family:'Inter',sans-serif;background:#0a0e18;color:var(--txt);overflow:hidden}
+    #c{position:fixed;inset:0;width:100%;height:100%;display:block;touch-action:none}
+    #labels{position:fixed;inset:0;overflow:hidden;pointer-events:none}
+
+    /* ---- floating Cisco-style status card (above each device) ---- */
+    .card{background:rgba(16,22,36,.92);border:1px solid rgba(255,255,255,.1);border-radius:12px;
+      padding:9px 12px;min-width:150px;backdrop-filter:blur(8px);box-shadow:0 12px 34px rgba(0,0,0,.5);
+      transform:translate(-50%,-100%);text-align:center}
+    .card .nm{font-size:12px;font-weight:700;color:#fff;margin-bottom:6px}
+    .card .st{font-size:20px;font-weight:800;letter-spacing:.5px;border-radius:8px;padding:5px 0}
+    .card .st.up{background:rgba(34,197,94,.16);color:#4ade80}
+    .card .st.down{background:rgba(239,68,68,.16);color:#f87171}
+    .card .st.unk{background:rgba(148,163,184,.14);color:#94a3b8}
+    .card .ip{font-size:10px;color:var(--dim);font-family:monospace;margin-top:5px}
+    .zone{font-size:12px;font-weight:800;letter-spacing:3px;color:rgba(255,255,255,.35);transform:translate(-50%,-50%)}
+
+    /* ---- left info panel (Cisco SFO-style) ---- */
+    .panel{position:fixed;top:20px;left:20px;width:210px;background:rgba(13,19,32,.9);
+      border:1px solid rgba(255,255,255,.09);border-radius:16px;padding:18px;backdrop-filter:blur(14px)}
+    .panel .loc{font-size:11px;color:var(--dim);font-weight:600;letter-spacing:1px}
+    .panel h1{font-size:22px;font-weight:800;margin:2px 0 14px}
+    .panel .big{display:flex;align-items:baseline;gap:8px;margin-bottom:10px}
+    .panel .big b{font-size:40px;font-weight:800;line-height:1}
+    .panel .big span{font-size:12px;color:var(--dim)}
+    .stats{display:flex;gap:8px;margin-top:6px}
+    .stat{flex:1;background:rgba(255,255,255,.04);border-radius:11px;padding:9px;text-align:center}
+    .stat b{font-size:22px;font-weight:800;display:block}
+    .stat.up b{color:var(--up)} .stat.down b{color:var(--down)}
+    .stat span{font-size:10px;color:var(--dim)}
+    .health{margin-top:12px;font-size:11px;color:var(--dim)}
+    .bar{height:7px;border-radius:5px;background:rgba(255,255,255,.08);margin-top:5px;overflow:hidden}
+    .bar>i{display:block;height:100%;background:linear-gradient(90deg,var(--up),#4ade80);transition:width .4s}
+
+    /* ---- top-right live indicator ---- */
+    .live{position:fixed;top:24px;right:24px;display:flex;align-items:center;gap:8px;font-size:12px;
+      font-weight:600;background:rgba(13,19,32,.85);border:1px solid rgba(255,255,255,.09);
+      border-radius:20px;padding:7px 14px;backdrop-filter:blur(10px)}
+    .dot{width:8px;height:8px;border-radius:50%;background:var(--down)}
+    .dot.on{background:var(--up);box-shadow:0 0 8px rgba(34,197,94,.6)}
+    .hint{position:fixed;bottom:18px;right:22px;font-size:11px;color:var(--dim);
+      background:rgba(13,19,32,.8);border:1px solid rgba(255,255,255,.08);border-radius:9px;padding:7px 12px}
+  </style>
+  <script type="importmap">
+  { "imports": { "three": "/vendor/three/three.module.min.js", "three/addons/": "/vendor/three/addons/" } }
+  </script>
+</head>
+<body>
+  <canvas id="c"></canvas>
+  <div id="labels"></div>
+
+  <div class="panel">
+    <div class="loc">FACTORY 4 · LANTAI 1</div>
+    <h1 id="place">Line Produksi</h1>
+    <div class="big"><b id="upBig">0</b><span>device online</span></div>
+    <div class="stats">
+      <div class="stat"><b id="nTotal">0</b><span>Total</span></div>
+      <div class="stat up"><b id="nUp">0</b><span>Up</span></div>
+      <div class="stat down"><b id="nDown">0</b><span>Down</span></div>
+    </div>
+    <div class="health">Health <span id="hVal">100%</span><div class="bar"><i id="hBar" style="width:100%"></i></div></div>
+  </div>
+
+  <div class="live"><span class="dot" id="cdot"></span><span id="clabel">Menyambung…</span></div>
+  <div class="hint">Drag = putar · scroll = zoom</div>
+
+  <script type="module">
+    import * as THREE from "three";
+    import { OrbitControls } from "three/addons/controls/OrbitControls.js";
+    import { CSS2DRenderer, CSS2DObject } from "three/addons/renderers/CSS2DRenderer.js";
+
+    /* ============================================================
+       SCENE DATA — satu tempat, satu scene, 2 titik device.
+       Ganti `ip` untuk memilih device asli yang dipantau.
+       ============================================================ */
+    const DEVICES = [
+      { ip: "172.19.88.19", name: "DCS QI F4",        x: -5.5, z: 0 },  // Zone A
+      { ip: "172.19.88.16", name: "DCS PLAYMAKER F4", x:  5.5, z: 0 },  // Zone B
+    ];
+    const ZONES = [
+      { x: -5.5, z: 0, w: 9, d: 12, color: 0x21324e, label: "ZONE A" },
+      { x:  5.5, z: 0, w: 9, d: 12, color: 0x223f31, label: "ZONE B" },
+    ];
+
+    const canvas = document.getElementById("c");
+    const W = () => innerWidth, H = () => innerHeight;
+
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x0a0e18);
+
+    const camera = new THREE.PerspectiveCamera(48, W() / H(), 0.1, 1000);
+    camera.position.set(0, 17, 24);
+
+    const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+    renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+    renderer.setSize(W(), H());
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+
+    const labelRenderer = new CSS2DRenderer();
+    labelRenderer.setSize(W(), H());
+    document.getElementById("labels").appendChild(labelRenderer.domElement);
+
+    const controls = new OrbitControls(camera, canvas);
+    controls.enableDamping = true; controls.dampingFactor = 0.09;
+    controls.maxPolarAngle = Math.PI * 0.47; controls.target.set(0, 1, 0);
+    controls.minDistance = 10; controls.maxDistance = 60;
+
+    // ---- lighting: flat & soft (no bloom / no tone-mapping) ----
+    scene.add(new THREE.HemisphereLight(0xa9bcd8, 0x0a0e18, 1.0));
+    scene.add(new THREE.AmbientLight(0x24304a, 0.5));
+    const key = new THREE.DirectionalLight(0xffffff, 1.6);
+    key.position.set(14, 22, 12); key.castShadow = true;
+    key.shadow.mapSize.set(2048, 2048);
+    key.shadow.camera.left = -20; key.shadow.camera.right = 20;
+    key.shadow.camera.top = 20; key.shadow.camera.bottom = -20;
+    key.shadow.bias = -0.0004; key.shadow.camera.updateProjectionMatrix();
+    scene.add(key);
+
+    // ---- base slab ----
+    const base = new THREE.Mesh(
+      new THREE.BoxGeometry(24, 0.4, 16),
+      new THREE.MeshStandardMaterial({ color: 0x0f1522, roughness: 0.95 })
+    );
+    base.position.y = -0.2; base.receiveShadow = true;
+    scene.add(base);
+
+    // ---- coloured zone floors (Cisco pastel blocks) ----
+    ZONES.forEach((z) => {
+      const f = new THREE.Mesh(
+        new THREE.BoxGeometry(z.w, 0.15, z.d),
+        new THREE.MeshStandardMaterial({ color: z.color, roughness: 0.85 })
+      );
+      f.position.set(z.x, 0.08, z.z); f.receiveShadow = true;
+      scene.add(f);
+      const el = document.createElement("div"); el.className = "zone"; el.textContent = z.label;
+      const lb = new CSS2DObject(el); lb.position.set(z.x, 0.2, z.z + z.d / 2 - 1); scene.add(lb);
+    });
+
+    // ---- low outer + divider walls (see-into rooms, Cisco style) ----
+    const wallMat = new THREE.MeshStandardMaterial({ color: 0xcdd6e6, roughness: 0.6, metalness: 0.05 });
+    function wall(x, z, w, d, h = 2.4) {
+      const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), wallMat);
+      m.position.set(x, h / 2, z); m.castShadow = true; m.receiveShadow = true; scene.add(m);
+    }
+    wall(0, -7.5, 22, 0.16);   // back
+    wall(0, 7.5, 22, 0.16);    // front
+    wall(-11, 0, 0.16, 15);    // left
+    wall(11, 0, 0.16, 15);     // right
+    wall(0, 0, 0.16, 15);      // divider between zones
+
+    // ---- device pins + floating status cards ----
+    const pins = {};   // ip -> { ball, ring, stem, cardEl, statusEl }
+    DEVICES.forEach((d) => {
+      const g = new THREE.Group(); g.position.set(d.x, 0, d.z);
+      const ring = new THREE.Mesh(new THREE.RingGeometry(0.7, 0.95, 40),
+        new THREE.MeshBasicMaterial({ color: 0x64748b, side: THREE.DoubleSide, transparent: true, opacity: 0.85 }));
+      ring.rotation.x = -Math.PI / 2; ring.position.y = 0.18;
+      const stem = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.07, 2.4, 12),
+        new THREE.MeshStandardMaterial({ color: 0x64748b }));
+      stem.position.y = 1.4; stem.castShadow = true;
+      const ball = new THREE.Mesh(new THREE.SphereGeometry(0.42, 26, 26),
+        new THREE.MeshStandardMaterial({ color: 0x64748b, emissive: 0x64748b, emissiveIntensity: 0.35, roughness: 0.4 }));
+      ball.position.y = 2.7; ball.castShadow = true;
+      g.add(ring, stem, ball);
+
+      // Cisco-style floating card (HTML via CSS2D)
+      const card = document.createElement("div"); card.className = "card";
+      card.innerHTML = `<div class="nm">${d.name}</div><div class="st unk">—</div><div class="ip">${d.ip}</div>`;
+      const cardObj = new CSS2DObject(card); cardObj.position.set(0, 4.4, 0); g.add(cardObj);
+
+      scene.add(g);
+      pins[d.ip] = { ball, ring, stem, statusEl: card.querySelector(".st") };
+    });
+
+    // ---- render loop ----
+    addEventListener("resize", () => {
+      camera.aspect = W() / H(); camera.updateProjectionMatrix();
+      renderer.setSize(W(), H()); labelRenderer.setSize(W(), H());
+    });
+    (function loop() {
+      requestAnimationFrame(loop);
+      controls.update();
+      renderer.render(scene, camera);
+      labelRenderer.render(scene, camera);
+    })();
+
+    /* ============================================================
+       LIVE LINK — connect scene pins to REAL devices via /ws.
+       Matching key = IP. This is the whole "how do pins connect to
+       real devices" answer, in code.
+       ============================================================ */
+    const COL = { UP: 0x22c55e, DOWN: 0xef4444, UNKNOWN: 0x64748b };
+    function applyStatus(devices) {
+      let up = 0;
+      devices.forEach((dev) => {
+        const p = pins[dev.ip];                 // <-- link: pin whose ip === device.ip
+        if (!p) return;
+        const hex = COL[dev.status] ?? COL.UNKNOWN;
+        p.ball.material.color.setHex(hex); p.ball.material.emissive.setHex(hex);
+        p.stem.material.color.setHex(hex); p.ring.material.color.setHex(hex);
+        p.statusEl.className = "st " + (dev.status === "UP" ? "up" : dev.status === "DOWN" ? "down" : "unk");
+        p.statusEl.textContent = dev.status || "—";
+      });
+      // panel stats (only our 2 tracked devices)
+      const mine = devices.filter((d) => pins[d.ip]);
+      up = mine.filter((d) => d.status === "UP").length;
+      const total = DEVICES.length, down = total - up;
+      document.getElementById("nTotal").textContent = total;
+      document.getElementById("nUp").textContent = up;
+      document.getElementById("nDown").textContent = down;
+      document.getElementById("upBig").textContent = up;
+      const health = total ? Math.round((up / total) * 100) : 100;
+      document.getElementById("hVal").textContent = health + "%";
+      document.getElementById("hBar").style.width = health + "%";
+    }
+    function setConn(ok) {
+      document.getElementById("cdot").classList.toggle("on", ok);
+      document.getElementById("clabel").textContent = ok ? "LIVE" : "Terputus";
+    }
+    (function connect() {
+      const proto = location.protocol === "https:" ? "wss" : "ws";
+      const ws = new WebSocket(`${proto}://${location.host}/ws`);
+      ws.onopen = () => setConn(true);
+      ws.onclose = () => { setConn(false); setTimeout(connect, 3000); };
+      ws.onerror = () => ws.close();
+      ws.onmessage = (e) => {
+        let m; try { m = JSON.parse(e.data); } catch { return; }
+        if (m.devices) applyStatus(m.devices);
+      };
+    })();
+  </script>
+</body>
+</html>
