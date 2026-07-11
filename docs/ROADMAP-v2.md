@@ -6,19 +6,29 @@
 
 ---
 
-## 0. Visi & Prinsip
+## 0. Visi & Prinsip  *(REVISI sesuai review 2026-07-11)*
 
-**Visi:** monitoring hardware dalam bentuk *digital twin* 3D (dan 2D) yang bisa
-diputar, menampilkan status device real-time — patokan tampilan **Cisco Spaces**,
-tapi ringan, flat/clean, dan gampang dirawat.
+**Visi:** monitoring hardware sebagai *digital twin* untuk **banyak lokasi** —
+tiap tempat penyimpanan barang punya peta sendiri (2D & 3D) yang menampilkan
+status device real-time. Patokan tampilan **Cisco Spaces**, tapi **ringan,
+flat/clean, low-poly** (Cisco pun begitu — lihat referensi), dan gampang dirawat.
 
-**Prinsip yang dipegang:**
-1. **Author sekali → `scene.json` → runtime tinggal muat.** Authoring dipisah dari runtime.
-2. **Satu sumber data (`scene.json`), banyak tampilan** (2D top-down & 3D).
-3. **Jembatan device = IP.** `pin.ip` / `model.deviceIp` dicocokkan dengan `device.ip` dari `/ws`.
-4. **Jangan ganggu v1.** Semua v2 = file terpisah; v1 (dashboard cards) tetap jalan.
-5. **Flat & ringan > wah.** Tanpa bloom/efek berat. Kejelasan status di atas foto-realisme.
-6. **Berdiri sendiri.** Komponen bisa dipindah/diaktifkan tanpa merombak app.
+**Prinsip (sudah dikoreksi):**
+1. **Author sekali → runtime tinggal muat.** Authoring dipisah dari runtime.
+2. **Multi-lokasi.** Monitoring mencakup BANYAK tempat, bukan satu. Tiap lokasi
+   punya peta sendiri. Yang dibangun sekarang = **1 lokasi contoh**, tapi **nambah
+   lokasi harus gampang** (registry + pemilih lokasi ala "Building 01 / 02 …").
+3. **2D & 3D = jalur TERPISAH, sumber data BEDA.** `scene.json` **hanya untuk 3D**.
+   **2D** pakai builder & data sendiri (gaya SVG floormap yang sudah disukai, mis.
+   `layout2d.json`). Yang menyatukan keduanya hanya **status-by-IP**, bukan datanya.
+4. **Jembatan device = IP.** `pin.ip` / `model.deviceIp` dicocokkan `device.ip` dari `/ws`.
+5. **Flat & ringan = KRITIS (bukan sekadar selera).** Cisco pun low-poly & blok
+   sederhana, bukan foto-real. **Ringan menang atas detail.** Tanpa bloom/efek berat.
+   Percobaan kemarin masih terasa berat → performa jadi prioritas utama.
+6. **Fitur 3D BERDIRI SENDIRI.** Builder 3D + viewer 3D = aplikasi/modul **terpisah**,
+   **TIDAK** digabung ke dalam app monitoring (v1). Cukup ambil status lewat WS/API.
+   Arah akhir: bisa jadi **package npm** yang dipakai proyek lain.
+7. **Jangan ganggu v1.** Dashboard cards lama tetap jalan apa adanya.
 
 ---
 
@@ -100,28 +110,34 @@ tapi ringan, flat/clean, dan gampang dirawat.
 
 ---
 
-### Fase C — Builder 2D (denah → SVG)  *(catatan: "belum ada")*
+### Fase C — Track 2D: Builder 2D + Viewer 2D (sumber data SENDIRI)
 
-- [ ] **C1 — Authoring 2D dari denah** (M)
-  - Upload gambar denah → jiplak jadi ruangan/tembok/pin **top-down**.
-  - Reuse alat "Muat Denah" yang sudah ada di Scene Builder (mode top-view) → output `scene.json` yang sama.
-- [ ] **C2 — Render 2D dari `scene.json`** (M)
-  - `floormap.html` (SVG) dibuat **membaca `scene.json`** (bukan denah hardcoded): proyeksi top-down tembok/lantai/pin.
-  - Marker status live (pola IP yang sama).
-- [ ] **C3 — Export SVG** (S)
-  - Dari scene → file `.svg` statik (untuk dokumen/print).
-- *Catatan arsitektur:* idealnya **tidak** bikin data 2D terpisah — 2D = tampilan top-down dari `scene.json` yang sama. Ini menyatukan Fase C & D.
+> **Penting (revisi):** 2D punya data & builder **sendiri**, BUKAN dari `scene.json`.
+> Output = layout 2D (mis. `layout2d.json`) yang dipakai `floormap.html` (SVG yang sudah disukai).
+
+- [ ] **C1 — Builder 2D (denah → SVG)** (M)  *(catatan kartu: "belum ada")*
+  - Upload denah → jiplak jadi ruangan/tembok/pin **top-down** → simpan `layout2d.json`.
+  - Boleh meniru gaya "Muat Denah", tapi **output format 2D sendiri** (bukan scene.json 3D).
+- [ ] **C2 — Viewer 2D baca `layout2d.json`** (M)
+  - `floormap.html` (SVG) dibuat **membaca `layout2d.json`** (bukan denah hardcoded).
+  - Marker status live (pola IP sama).
+- [ ] **C3 — Export SVG statik** (S) — untuk dokumen/print.
 
 ---
 
-### Fase D — Dua Tipe: 2D & 3D (satu data, toggle)
+### Fase D — Multi-Lokasi & Pemilih 2D/3D
 
-- [ ] **D1 — Satu `scene.json` → dua renderer** (M)
-  - Halaman runtime punya toggle **2D / 3D**; keduanya baca `scene.json` yang sama.
-  - 2D = kanvas/SVG top-down; 3D = Three.js (yang sudah ada).
-- [ ] **D2 — Marker & status konsisten** (S)
-  - Warna/label device sama di 2D & 3D; klik device sinkron.
-- [ ] **D3 — Deep-link view** (S) — `?view=2d|3d&scene=...`.
+> Menjawab "banyak tempat" + "ada tipe 2D & 3D". 2D & 3D tetap data terpisah;
+> toggle hanya memilih viewer + file mana yang dimuat untuk lokasi terpilih.
+
+- [ ] **D1 — Registry lokasi** (M)
+  - `locations.json` → `[{ id, name, scene3d: "/scenes/gudang-a.json", layout2d: "/layouts/gudang-a.json" }, …]`.
+  - **Nambah lokasi = tambah 1 entri + file-nya.** Itu saja.
+- [ ] **D2 — Pemilih lokasi** (S) — dropdown "Building 01 / 02 …" (ala Cisco) untuk pindah tempat.
+- [ ] **D3 — Toggle 2D / 3D per lokasi** (S)
+  - Satu shell viewer: tombol **2D** memuat `layout2d`, tombol **3D** memuat `scene3d` lokasi terpilih.
+  - Deep-link: `?loc=gudang-a&view=3d`.
+- [ ] **D4 — Status live lintas lokasi** (S) — device di lokasi mana pun tetap dicocokkan by-IP.
 
 ---
 
@@ -162,20 +178,25 @@ tapi ringan, flat/clean, dan gampang dirawat.
 ## 4. Arsitektur & Keputusan Teknis
 
 - **Rendering:** Three.js ter-vendor lokal (offline), flat (tanpa bloom/tone-map berat), soft shadow opsional.
-- **Data:** satu `scene.json` (meter). Runtime 2D & 3D baca yang sama.
-- **Linking:** IP sebagai "foreign key" device.
-- **Pengungkit performa (Fase A3/F1):** merge geometri, InstancedMesh, low-poly, tekstur kecil, Draco, LOD, cap pixelRatio, toggle shadow.
-- **Isolasi:** v2 = file terpisah di `public/`; eksperimen/parkir di `unused/`; dokumen di `docs/`.
+- **Data (TERPISAH):** 3D = `scene.json`; 2D = `layout2d.json` (format sendiri). Multi-lokasi via `locations.json`. Ketiganya per-meter/top-down; hanya status-by-IP yang menyatukan.
+- **Linking:** IP sebagai "foreign key" device (dari `/ws` app monitoring).
+- **Standalone:** builder 3D + viewer 3D = modul **terpisah** dari app monitoring; hanya konsumsi WS/API. Arah akhir = package npm. Untuk sekarang tetap file mandiri (pola `unused/v2-cisco/v2.html`).
+- **Pengungkit performa (Fase A3/F1) — KRITIS:** merge geometri, InstancedMesh, low-poly, tekstur kecil, Draco, LOD, cap pixelRatio, toggle shadow. Target: ringan seperti Cisco.
+- **Isolasi:** v2 = file terpisah; eksperimen/parkir di `unused/`; dokumen di `docs/`.
 
 ---
 
-## 5. Skema `scene.json` (target lengkap)
+## 5. Skema Data (TIGA file terpisah)
+
+**Ringkasan:** `scene.json` (3D) · `layout2d.json` (2D) · `locations.json` (daftar lokasi).
+Ketiganya independen; hanya dihubungkan lewat **IP device**.
+
+### 5a. `scene.json` — HANYA untuk 3D (target lengkap)
 
 ```jsonc
 {
   "version": 1,
   "units": "m",
-  "view": { "default": "3d", "lightMode": false },          // (rencana D/A)
   "walls": [
     { "points": [[x,z], ...], "height": 3, "thickness": 0.15,
       "color": "#8fa3c4", "closed": true,
@@ -192,18 +213,44 @@ tapi ringan, flat/clean, dan gampang dirawat.
   "camera": { "position": [x,y,z], "target": [x,y,z] }       // opsional; kalau kosong → auto-fit (A2)
 }
 ```
-Field baru (`hidden`, `zones`, `view`, `level`) **backward-compatible** — runtime lama abaikan yang tidak dikenal.
+Field baru (`hidden`, `zones`, `level`) **backward-compatible** — runtime lama abaikan yang tidak dikenal.
+
+### 5b. `layout2d.json` — HANYA untuk 2D (top-down / SVG, format sendiri)
+
+```jsonc
+{
+  "version": 1,
+  "viewBox": [0, 0, 1120, 780],                 // koordinat SVG (bukan meter)
+  "rooms":  [ { "x": 0, "y": 0, "w": 200, "h": 150, "label": "GUDANG A", "color": "#.." } ],
+  "walls":  [ /* garis/segmen 2D */ ],
+  "pins":   [ { "x": 320, "y": 180, "ip": "172.19.88.19", "label": "DCS QI F4" } ]
+}
+```
+Dipakai `floormap.html` (SVG blueprint yang sudah disukai). **Tidak** berbagi data dengan `scene.json`.
+
+### 5c. `locations.json` — daftar lokasi (multi-lokasi)
+
+```jsonc
+{
+  "locations": [
+    { "id": "gudang-a", "name": "Gudang A", "scene3d": "/scenes/gudang-a.json", "layout2d": "/layouts/gudang-a.json" },
+    { "id": "gudang-b", "name": "Gudang B", "scene3d": "/scenes/gudang-b.json", "layout2d": "/layouts/gudang-b.json" }
+  ]
+}
+```
+**Nambah lokasi** = tambah satu entri di sini + file scene/layout-nya.
 
 ---
 
 ## 6. Prioritas (urutan disarankan)
 
-1. **Fase A** (A1 tembok, A2 center, A3 performa) — dampak besar, effort kecil, langsung menjawab catatanmu.
-2. **Fase C1–C2 + D1** — 2D dari `scene.json` + toggle 2D/3D (menjawab "tipe 2D & 3D" + "builder 2D").
-3. **Fase B1–B3** — builder lebih enak (edit + simpan ke server).
-4. **Fase E** — fitur Cisco (detail, zona, cari, multi-lantai) sesuai kebutuhan.
-5. **Fase F** — optimasi & deploy.
-6. **Fase G** — package npm (jangka panjang).
+1. **Fase A** (A1 tembok, A2 center, **A3 performa = paling penting**) — dampak besar, effort kecil, menjawab catatan tampilan.
+2. **Fase D1–D2** — registry + pemilih lokasi (fondasi multi-lokasi; bikin nambah tempat gampang sejak awal).
+3. **Fase C** — builder 2D + viewer 2D (data sendiri) — menjawab "builder 2D belum ada".
+4. **Fase D3** — toggle 2D/3D per lokasi.
+5. **Fase B1–B3** — builder 3D lebih enak (edit + simpan ke server).
+6. **Fase E** — fitur Cisco (detail, zona, cari) sesuai kebutuhan.
+7. **Fase F / G** — optimasi lanjut & package npm.
 
 ---
 
