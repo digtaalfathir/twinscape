@@ -53,10 +53,10 @@ flat/clean, low-poly** (Cisco pun begitu — lihat referensi), dan gampang diraw
 
 | Catatan | Jadi task | Fase |
 |---|---|---|
-| tanpa tembok pinggir bisa lebih clean | Toggle sembunyikan tembok (per-tembok / global) | A1 |
-| 3d bisa lebih smooth dan tidak berat | Optimasi performa (merge geometri, instancing, dll.) | A3 |
-| builder 2d belum ada, denah → svg | Builder 2D + render top-down dari `scene.json` | C |
-| tampilan awal langsung di tengah | Kamera auto-center / fit-to-scene | A2 |
+| tanpa tembok pinggir bisa lebih clean | **Bukan fitur** — cukup tidak digambar saat authoring | — |
+| 3d bisa lebih smooth dan tidak berat | Optimasi performa (merge geometri, instancing, dll.) | A2 |
+| builder 2d belum ada, denah → svg | Builder 2D + viewer 2D (data `layout2d.json` sendiri) | C |
+| tampilan awal langsung di tengah | Kamera auto-center / fit-to-scene | A1 |
 | perbagus 3d builder, lebih mudah & berdiri sendiri | UX builder: undo, edit tembok, simpan ke server | B |
 | ada tipe 2d & tipe 3d | Satu scene, dua renderer + toggle 2D/3D | D |
 | buat npm sendiri (konteks) | Ekstrak jadi package reusable | G |
@@ -67,19 +67,15 @@ flat/clean, low-poly** (Cisco pun begitu — lihat referensi), dan gampang diraw
 
 ### Fase A — Polish tampilan & UX inti (quick wins) 🎯 mulai di sini
 
-- [ ] **A1 — Opsi sembunyikan tembok** (S)
-  - Tambah field `hidden: true` / `heightMode: "none"|"low"|"full"` per tembok di `scene.json`.
-  - Di Scene Builder: checkbox "Sembunyikan/rendahkan tembok pinggir" pada tembok terpilih + toggle global.
-  - Di Scene View & v2: hormati field itu (tembok tidak dirender / dirender rendah).
-  - *Acceptance:* bisa bikin tampilan open-plan tanpa tembok luar, look lebih clean.
+> Catatan: "tanpa tembok pinggir" **bukan fitur** — cukup jangan gambar temboknya saat authoring.
 
-- [ ] **A2 — Kamera awal auto-center** (S)
+- [ ] **A1 — Kamera awal auto-center** (S)
   - Hitung bounding box seluruh objek scene → set target ke pusat, jarak kamera pas (fit).
   - Kalau `scene.json.camera` ada → pakai itu; kalau tidak → auto-fit.
   - Terapkan di `scene-view.js` dan `unused/v2-cisco/v2.html`.
   - *Acceptance:* buka scene apa pun → langsung ter-frame di tengah, tidak perlu geser manual.
 
-- [ ] **A3 — Performa: "smooth & tidak berat"** (M)
+- [ ] **A2 — Performa: "smooth & tidak berat"** (M)
   - **Merge geometri tembok** sewarna via `BufferGeometryUtils.mergeGeometries` → tekan draw-call.
   - **Instancing** untuk model berulang (mis. 6 mesin identik = 1 `InstancedMesh`).
   - Cap `pixelRatio` (sudah), matikan shadow opsional (toggle "mode ringan").
@@ -87,7 +83,7 @@ flat/clean, low-poly** (Cisco pun begitu — lihat referensi), dan gampang diraw
   - Frustum culling default; hindari material transparan berlebih.
   - *Acceptance:* scene sedang (ratusan objek) tetap 60fps di laptop biasa; ada toggle "mode ringan".
 
-- [ ] **A4 — Toggle tampilan cepat** (S)
+- [ ] **A3 — Toggle tampilan cepat** (S)
   - Tombol: Labels on/off (ada), Grid on/off, Shadow on/off, "mode ringan".
 
 ---
@@ -200,7 +196,6 @@ Ketiganya independen; hanya dihubungkan lewat **IP device**.
   "walls": [
     { "points": [[x,z], ...], "height": 3, "thickness": 0.15,
       "color": "#8fa3c4", "closed": true,
-      "hidden": false,                                       // (rencana A1)
       "openings": [ { "seg": 0, "dist": 6, "width": 1.2, "top": 2.1, "sill": 0 } ] }
   ],
   "floors": [ { "x": 0, "z": 0, "w": 20, "d": 14, "type": "concrete|green|office|custom", "color": "#..", "order": 1 } ],
@@ -213,7 +208,7 @@ Ketiganya independen; hanya dihubungkan lewat **IP device**.
   "camera": { "position": [x,y,z], "target": [x,y,z] }       // opsional; kalau kosong → auto-fit (A2)
 }
 ```
-Field baru (`hidden`, `zones`, `level`) **backward-compatible** — runtime lama abaikan yang tidak dikenal.
+Field baru (`zones`, `level`) **backward-compatible** — runtime lama abaikan yang tidak dikenal.
 
 ### 5b. `layout2d.json` — HANYA untuk 2D (top-down / SVG, format sendiri)
 
@@ -244,7 +239,7 @@ Dipakai `floormap.html` (SVG blueprint yang sudah disukai). **Tidak** berbagi da
 
 ## 6. Prioritas (urutan disarankan)
 
-1. **Fase A** (A1 tembok, A2 center, **A3 performa = paling penting**) — dampak besar, effort kecil, menjawab catatan tampilan.
+1. **Fase A** (A1 auto-center, **A2 performa = paling penting**, A3 toggle) — dampak besar, effort kecil, menjawab catatan tampilan.
 2. **Fase D1–D2** — registry + pemilih lokasi (fondasi multi-lokasi; bikin nambah tempat gampang sejak awal).
 3. **Fase C** — builder 2D + viewer 2D (data sendiri) — menjawab "builder 2D belum ada".
 4. **Fase D3** — toggle 2D/3D per lokasi.
