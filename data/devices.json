@@ -1,4 +1,4 @@
 [
-  { "name": "Gate Inbound", "ip": "10.10.1.210", "severity": "MEDIUM", "owner": "", "location": "", "vendor": "", "notes": "" },
-  { "name": "Gate Outbound", "ip": "10.10.1.210", "severity": "LOW", "owner": "", "location": "", "vendor": "", "notes": "" }
+  { "name": "Gate Inbound", "ip": "10.10.1.180", "severity": "MEDIUM", "owner": "", "location": "", "vendor": "", "notes": "" },
+  { "name": "Gate Outbound", "ip": "10.10.1.210", "severity": "MEDIUM", "owner": "", "location": "", "vendor": "", "notes": "" }
 ]
