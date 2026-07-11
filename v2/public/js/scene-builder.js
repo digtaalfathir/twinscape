@@ -42,6 +42,8 @@ let history = [], redoStack = [];   // B2: undo/redo (snapshots of scene JSON)
 const HISTORY_MAX = 60;
 let wallHandles = null;   // B1: draggable vertex handles for selected wall
 let vDrag = null;         // B1: { rec, vi } while dragging a wall vertex
+let selection = [];       // multi-select (array of records); `selected` = primary (terakhir)
+let selectionHelpers = []; // BoxHelper kuning saat pilih >1 objek
 
 const lighting = {
   exposure: 1.05, sunElevation: 55, sunAzimuth: 40, sunIntensity: 2.1,
@@ -176,7 +178,7 @@ function setMode(m) {
   cancelWall(); cancelFloor();
   mode = m;
   document.querySelectorAll(".btn.mode").forEach((b) => b.classList.toggle("active", b.dataset.mode === m));
-  if (m !== "select") { transform?.detach(); clearWallHandles(); selected = null; }
+  if (m !== "select") { transform?.detach(); clearWallHandles(); clearSelectionHelpers(); selection = []; selected = null; }
   $("statMode").innerHTML = `Mode: <b>${MODE_LABEL[m]}</b>`;
   updateInspector();
   setTip();
@@ -265,12 +267,12 @@ function bindPointer() {
     const ctrl = e.ctrlKey || e.metaKey;
     if (ctrl && e.key.toLowerCase() === "z") { e.preventDefault(); e.shiftKey ? redo() : undo(); return; }
     if (ctrl && e.key.toLowerCase() === "y") { e.preventDefault(); redo(); return; }
-    if (ctrl && e.key.toLowerCase() === "d") { e.preventDefault(); duplicate(selected); return; }
-    if (ctrl && e.key.toLowerCase() === "c") { if (selected) clipboard = selected; return; }
+    if (ctrl && e.key.toLowerCase() === "d") { e.preventDefault(); duplicate(selection); return; }
+    if (ctrl && e.key.toLowerCase() === "c") { if (selection.length) clipboard = selection.slice(); return; }
     if (ctrl && e.key.toLowerCase() === "v") { if (clipboard) duplicate(clipboard); return; }
     if (e.key === "Enter" && mode === "wall") finishWall();
     if (e.key === "Escape") { cancelWall(); cancelFloor(); if (mode !== "select") setMode("select"); }
-    if ((e.key === "Delete" || e.key === "Backspace") && selected) removeRecord(selected);
+    if ((e.key === "Delete" || e.key === "Backspace") && selection.length) removeSelection();
   });
 }
 function tap(e) {
@@ -287,7 +289,10 @@ function tap(e) {
 function pickAt(e) {
   setNdc(e);
   const hits = raycaster.intersectObjects(objects.map((o) => o.obj), true);
-  select(hits.length ? recordOf(hits[0].object) : null);
+  const rec = hits.length ? recordOf(hits[0].object) : null;
+  const additive = e.shiftKey || e.ctrlKey || e.metaKey;
+  if (!rec && additive) return;              // shift/ctrl + klik kosong: jangan hapus selection
+  select(rec, additive);
 }
 function recordOf(o) {
   while (o) { if (o.userData && o.userData.recId != null) return byId[o.userData.recId]; o = o.parent; }
@@ -306,25 +311,49 @@ function addObject(type, obj, data) {
   refreshList();
   return rec;
 }
-function removeRecord(rec) {
-  if (!rec) return;
-  pushHistory();
-  if (selected === rec) { transform?.detach(); clearWallHandles(); selected = null; }
-  if (clipboard === rec) clipboard = null;
+function removeCore(rec) {
   scene.remove(rec.obj);
   objects = objects.filter((o) => o !== rec);
   delete byId[rec.id];
+  const si = selection.indexOf(rec); if (si >= 0) selection.splice(si, 1);
+  if (Array.isArray(clipboard)) { const ci = clipboard.indexOf(rec); if (ci >= 0) clipboard.splice(ci, 1); }
+}
+function removeRecord(rec) {              // hapus 1 objek (tombol ✕ di daftar)
+  if (!rec) return;
+  pushHistory();
+  removeCore(rec);
+  if (selected === rec) { transform?.detach(); clearWallHandles(); selected = selection[selection.length - 1] || null; }
+  updateSelectionHelpers(); refreshList(); updateInspector();
+}
+function removeSelection() {              // hapus SEMUA yang terpilih
+  if (!selection.length) { toast("Tidak ada objek terpilih", false); return; }
+  pushHistory();
+  selection.slice().forEach(removeCore);
+  selection = []; selected = null;
+  transform?.detach(); clearWallHandles(); clearSelectionHelpers();
   refreshList(); updateInspector();
 }
-function select(rec) {
-  selected = rec;
+function select(rec, additive) {
+  if (!rec) selection = [];
+  else if (additive) { const i = selection.indexOf(rec); if (i >= 0) selection.splice(i, 1); else selection.push(rec); }
+  else selection = [rec];
+  selected = selection.length ? selection[selection.length - 1] : null;
+  const single = selection.length === 1 ? selected : null;
   transform?.detach();
   clearWallHandles();
-  if (transform && rec && (rec.type === "model" || rec.type === "pin" || rec.type === "text")) transform.attach(rec.obj);
-  if (rec && rec.type === "wall") showWallHandles(rec);
+  if (single && transform && (single.type === "model" || single.type === "pin" || single.type === "text")) transform.attach(single.obj);
+  if (single && single.type === "wall") showWallHandles(single);
+  updateSelectionHelpers();
   updateInspector();
   refreshList();
-  if (rec) $("statCoords").textContent = `Terpilih: ${rec.data.name || rec.data.text || rec.type}  (Ctrl+D duplikat · Delete hapus)`;
+  if (selection.length > 1) $("statCoords").textContent = `${selection.length} objek terpilih (Ctrl+D duplikat semua · Delete hapus semua)`;
+  else if (selected) $("statCoords").textContent = `Terpilih: ${selected.data.name || selected.data.text || selected.type}  ·  Shift+klik untuk pilih banyak`;
+}
+function selectMany(recs) {
+  selection = recs.slice();
+  selected = selection.length ? selection[selection.length - 1] : null;
+  transform?.detach(); clearWallHandles();
+  updateSelectionHelpers(); updateInspector(); refreshList();
 }
 
 // =====================================================================
@@ -637,30 +666,35 @@ function createFloorFull() {
 // =====================================================================
 //  DUPLICATE / COPY-PASTE
 // =====================================================================
-function duplicate(rec) {
-  if (!rec) { toast("Pilih objek dulu untuk diduplikat", false); return; }
-  pushHistory();
-  let nr = null;
+function duplicateOne(rec) {
   if (rec.type === "wall") {
     const data = JSON.parse(JSON.stringify(rec.data));
     data.points = data.points.map(([x, z]) => [r3(x + 2), r3(z + 2)]);
-    nr = addObject("wall", buildWallGroup(data), data);
+    return addObject("wall", buildWallGroup(data), data);
   } else if (rec.type === "floor") {
     const data = JSON.parse(JSON.stringify(rec.data));
     data.x = r3(data.x + 2); data.z = r3(data.z + 2); data.order = nextFloorOrder();
-    nr = addObject("floor", buildFloor(data), data);
+    return addObject("floor", buildFloor(data), data);
   } else if (rec.type === "pin") {
     const g = buildPin(); g.position.copy(rec.obj.position).add(new THREE.Vector3(2, 0, 2));
-    nr = addObject("pin", g, { ...rec.data });
+    return addObject("pin", g, { ...rec.data });
   } else if (rec.type === "text") {
     const data = { ...rec.data, x: r3(rec.obj.position.x + 2), y: r3(rec.obj.position.y), z: r3(rec.obj.position.z + 2) };
-    nr = addObject("text", makeTextSprite(data), data);
+    return addObject("text", makeTextSprite(data), data);
   } else if (rec.type === "model") {
     const clone = rec.obj.clone(true);
     clone.position.x += 2; clone.position.z += 2;
-    nr = addObject("model", clone, { ...rec.data });
+    return addObject("model", clone, { ...rec.data });
   }
-  if (nr) { setMode("select"); select(nr); toast("Objek diduplikat", true); }
+  return null;
+}
+// Duplikat 1 objek ATAU banyak sekaligus (list). Satu langkah undo untuk semua.
+function duplicate(list) {
+  const arr = Array.isArray(list) ? list.filter(Boolean) : (list ? [list] : []);
+  if (!arr.length) { toast("Pilih objek dulu untuk diduplikat", false); return; }
+  pushHistory();
+  const created = arr.map(duplicateOne).filter(Boolean);
+  if (created.length) { setMode("select"); selectMany(created); toast(`${created.length} objek diduplikat`, true); }
 }
 
 // =====================================================================
@@ -696,7 +730,8 @@ function updateDenah() {
 // =====================================================================
 function show(id, on) { $(id).classList.toggle("hidden", !on); }
 function updateInspector() {
-  const selType = selected && selected.type;
+  const multi = selection.length > 1;
+  const selType = multi ? null : (selected && selected.type);   // multi: sembunyikan panel per-objek
   show("secWall", mode === "wall");
   show("secWallSel", selType === "wall");
   show("secFloor", mode === "floor");
@@ -705,7 +740,7 @@ function updateInspector() {
   show("secText", mode === "text" || selType === "text");
   show("secModel", selType === "model");
   show("secFloorSel", selType === "floor");
-  show("secActions", !!selected);
+  show("secActions", selection.length > 0);
 
   if (selType === "model") {
     $("modelName").value = selected.data.name || "";
@@ -731,13 +766,13 @@ function refreshList() {
   ul.innerHTML = "";
   objects.forEach((o) => {
     const li = document.createElement("li");
-    if (o === selected) li.className = "sel";
+    if (selection.includes(o)) li.className = "sel";
     const nm = o.data.name || o.data.text || o.data.ip || o.type;
     li.innerHTML = `<span class="tag">${o.type}</span><span class="nm">${escapeHtml(nm)}</span><span class="x">✕</span>`;
     li.onclick = (ev) => {
       if (ev.target.classList.contains("x")) { removeRecord(o); return; }
       if (mode !== "select") setMode("select");
-      select(o);
+      select(o, ev.shiftKey || ev.ctrlKey || ev.metaKey);
     };
     ul.appendChild(li);
   });
@@ -754,7 +789,8 @@ function buildSceneJSON() {
     models: objects.filter((o) => o.type === "model").map((o) => ({
       url: o.data.url, name: o.data.name, deviceIp: o.data.deviceIp || "",
       position: [r3(o.obj.position.x), r3(o.obj.position.y), r3(o.obj.position.z)],
-      rotationY: r3(o.obj.rotation.y), scale: r3(o.obj.scale.x),
+      rotation: [r3(o.obj.rotation.x), r3(o.obj.rotation.y), r3(o.obj.rotation.z)],   // rotasi PENUH (x,y,z)
+      scale: [r3(o.obj.scale.x), r3(o.obj.scale.y), r3(o.obj.scale.z)],               // skala PENUH
     })),
     pins: objects.filter((o) => o.type === "pin").map((o) => ({
       x: r3(o.obj.position.x), z: r3(o.obj.position.z), ip: o.data.ip || "", label: o.data.label || "",
@@ -784,10 +820,19 @@ $("fileScene").onchange = (e) => {
 };
 $("btnNew").onclick = () => { if (confirm("Kosongkan scene?")) { pushHistory(); clearAll(); } };
 
+// Terapkan transform model (kompatibel format lama rotationY/scalar & baru array)
+function applyModelTransform(root, d) {
+  root.position.fromArray(d.position || [0, 0, 0]);
+  if (Array.isArray(d.rotation)) root.rotation.set(d.rotation[0] || 0, d.rotation[1] || 0, d.rotation[2] || 0);
+  else root.rotation.set(0, d.rotationY || 0, 0);
+  if (Array.isArray(d.scale)) root.scale.set(d.scale[0] || 1, d.scale[1] || 1, d.scale[2] || 1);
+  else root.scale.setScalar(d.scale || 1);
+}
 function clearAll() {
   objects.slice().forEach((o) => scene.remove(o.obj));
   objects = []; for (const k in byId) delete byId[k];
-  transform?.detach(); clearWallHandles(); selected = null; clipboard = null; floorOrder = 0;
+  transform?.detach(); clearWallHandles(); clearSelectionHelpers();
+  selection = []; selected = null; clipboard = null; floorOrder = 0;
   refreshList(); updateInspector();
 }
 function loadSceneJSON(s) {
@@ -800,8 +845,7 @@ function loadSceneJSON(s) {
     loader.load(d.url, (gltf) => {
       const root = gltf.scene;
       root.traverse((o) => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; } });
-      root.position.fromArray(d.position || [0, 0, 0]);
-      root.rotation.y = d.rotationY || 0; root.scale.setScalar(d.scale || 1);
+      applyModelTransform(root, d);
       addObject("model", root, { url: d.url, name: d.name, deviceIp: d.deviceIp || "" });
     }, undefined, () => toast("Model tak ditemukan: " + d.url, false));
   });
@@ -858,6 +902,14 @@ function positionWallHandles(rec) {
   rec.data.points.forEach((pt, vi) => { const h = wallHandles.children[vi]; if (h) h.position.set(pt[0], 0.3, pt[1]); });
 }
 function clearWallHandles() { if (wallHandles) { scene.remove(wallHandles); wallHandles = null; } }
+
+// ---- multi-select highlight (kotak kuning saat pilih >1 objek) ----
+function clearSelectionHelpers() { selectionHelpers.forEach((h) => scene.remove(h)); selectionHelpers = []; }
+function updateSelectionHelpers() {
+  clearSelectionHelpers();
+  if (selection.length < 2) return;   // 1 objek → sudah ada gizmo/handle
+  selection.forEach((rec) => { const h = new THREE.BoxHelper(rec.obj, 0xffcc22); scene.add(h); selectionHelpers.push(h); });
+}
 
 // ---- selected-wall inspector (edit props + openings) ----
 function populateWallSel() {
@@ -967,9 +1019,9 @@ function bindUI() {
   $("btnUndo").onclick = undo;
   $("btnRedo").onclick = redo;
 
-  // generic actions
-  $("btnDup").onclick = () => duplicate(selected);
-  $("btnDel").onclick = () => removeRecord(selected);
+  // generic actions (jalan untuk 1 ATAU banyak objek terpilih)
+  $("btnDup").onclick = () => duplicate(selection);
+  $("btnDel").onclick = () => removeSelection();
 
   // denah
   ["denahW", "denahOp", "denahShow"].forEach((id) => ($(id).oninput = updateDenah));

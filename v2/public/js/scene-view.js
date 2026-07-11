@@ -358,8 +358,10 @@ function addModel(d) {
   loadModelOnce(d.url).then((proto) => {
     const root = proto.clone(true);
     root.position.fromArray(d.position || [0, 0, 0]);
-    root.rotation.y = d.rotationY || 0;
-    root.scale.setScalar(d.scale || 1);
+    if (Array.isArray(d.rotation)) root.rotation.set(d.rotation[0] || 0, d.rotation[1] || 0, d.rotation[2] || 0);
+    else root.rotation.set(0, d.rotationY || 0, 0);
+    if (Array.isArray(d.scale)) root.scale.set(d.scale[0] || 1, d.scale[1] || 1, d.scale[2] || 1);
+    else root.scale.setScalar(d.scale || 1);
     built.add(root);
     if (d.deviceIp) {
       const box = new THREE.Box3().setFromObject(root);
