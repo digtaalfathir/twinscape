@@ -31,6 +31,9 @@
     <button class="btn" id="btnDenah">Muat Denah</button>
     <span class="sep"></span>
     <button class="btn" id="btnTop">Top View</button>
+    <span class="sep"></span>
+    <button class="btn" id="btnUndo" title="Undo (Ctrl+Z)" disabled>↶ Undo</button>
+    <button class="btn" id="btnRedo" title="Redo (Ctrl+Y)" disabled>↷ Redo</button>
     <span class="spacer"></span>
     <button class="btn" id="btnNew">Baru</button>
     <button class="btn" id="btnLoad">Muat scene.json</button>
@@ -80,6 +83,18 @@
       <div class="row"><label>Tinggi atas (m)</label><input type="number" id="doorTop" value="2.1" step="0.1" min="0.3"></div>
       <div class="row"><label>Ambang bawah (m)</label><input type="number" id="doorSill" value="0" step="0.1" min="0"></div>
       <div class="hint">Klik pada sebuah <b>tembok</b> untuk melubanginya. Ambang bawah <b>0</b> = pintu; <b>&gt;0</b> (mis. 1) = jendela.</div>
+    </div>
+
+    <!-- Wall selected (edit + openings + drag vertex) -->
+    <div class="sec hidden" id="secWallSel">
+      <h3>Tembok Terpilih</h3>
+      <div class="row"><label>Tinggi (m)</label><input type="number" id="wsH" step="0.1" min="0.2"></div>
+      <div class="row"><label>Tebal (m)</label><input type="number" id="wsT" step="0.05" min="0.02"></div>
+      <div class="row"><label>Warna</label><input type="color" id="wsColor"></div>
+      <div class="row"><label>Tutup loop</label><input type="checkbox" id="wsClosed"></div>
+      <div class="hint">Titik kuning di sudut tembok bisa <b>digeser</b> (drag) untuk ubah bentuk.</div>
+      <h3 style="margin-top:14px">Lubang (Pintu/Jendela)</h3>
+      <div id="wsOpenings"></div>
     </div>
 
     <!-- Floor defaults (create mode) -->

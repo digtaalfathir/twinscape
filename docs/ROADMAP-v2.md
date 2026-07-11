@@ -90,10 +90,9 @@ flat/clean, low-poly** (Cisco pun begitu — lihat referensi), dan gampang diraw
 
 ### Fase B — Builder 3D lebih mudah & berdiri sendiri
 
-- [ ] **B1 — Edit objek yang sudah ada** (M)
-  - Geser titik tembok (drag vertex), ubah tinggi/tebal tembok terpilih, hapus/geser lubang pintu.
-  - Saat ini tembok/lubang hanya bisa dibuat & dihapus utuh.
-- [ ] **B2 — Undo / Redo** (M) — histori aksi (buat/hapus/pindah).
+- [x] **B1 — Edit objek yang sudah ada** (M) ✅ DONE
+  - Pilih tembok → panel "Tembok Terpilih": ubah tinggi/tebal/warna/tutup-loop; **drag titik kuning** di sudut untuk geser vertex; daftar lubang (edit lebar/posisi/atas/ambang + hapus).
+- [x] **B2 — Undo / Redo** (M) ✅ DONE — snapshot scene sebelum tiap aksi (buat/hapus/geser/edit). Tombol ↶/↷ + Ctrl+Z / Ctrl+Y (Ctrl+Shift+Z). Kamera tak ikut berubah saat undo.
 - [ ] **B3 — Simpan ke server (bukan hanya download)** (M)
   - Endpoint POST `/api/scene` (v2, backend terpisah) untuk menulis `public/scene.json`.
   - Tombol "Simpan ke server" di builder → tidak perlu pindah file manual.

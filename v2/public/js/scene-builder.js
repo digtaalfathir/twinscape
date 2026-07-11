@@ -38,6 +38,10 @@ let draggingGizmo = false;
 let refPlane = null, refAspect = 1;
 let floorOrder = 0;       // z-layer counter for floors
 let clipboard = null;     // for copy/paste
+let history = [], redoStack = [];   // B2: undo/redo (snapshots of scene JSON)
+const HISTORY_MAX = 60;
+let wallHandles = null;   // B1: draggable vertex handles for selected wall
+let vDrag = null;         // B1: { rec, vi } while dragging a wall vertex
 
 const lighting = {
   exposure: 1.05, sunElevation: 55, sunAzimuth: 40, sunIntensity: 2.1,
@@ -106,7 +110,7 @@ function init() {
     transform = new TransformControls(camera, canvas);
     transform.setTranslationSnap(0.5);
     transform.setRotationSnap(THREE.MathUtils.degToRad(15));
-    transform.addEventListener("dragging-changed", (e) => { draggingGizmo = e.value; controls.enabled = !e.value; });
+    transform.addEventListener("dragging-changed", (e) => { draggingGizmo = e.value; controls.enabled = !e.value; if (e.value) pushHistory(); });
     scene.add(transform.getHelper());
   } catch (e) { console.warn("[SceneBuilder] TransformControls dilewati:", e); transform = null; }
 
@@ -172,7 +176,7 @@ function setMode(m) {
   cancelWall(); cancelFloor();
   mode = m;
   document.querySelectorAll(".btn.mode").forEach((b) => b.classList.toggle("active", b.dataset.mode === m));
-  if (m !== "select") { transform?.detach(); selected = null; }
+  if (m !== "select") { transform?.detach(); clearWallHandles(); selected = null; }
   $("statMode").innerHTML = `Mode: <b>${MODE_LABEL[m]}</b>`;
   updateInspector();
   setTip();
@@ -223,8 +227,23 @@ function wallCursor(p) {
 // =====================================================================
 function bindPointer() {
   let dn = null;
-  canvas.addEventListener("pointerdown", (e) => { dn = { x: e.clientX, y: e.clientY }; });
+  canvas.addEventListener("pointerdown", (e) => {
+    dn = { x: e.clientX, y: e.clientY };
+    // B1: mulai geser vertex tembok bila klik salah satu handle kuning
+    if (mode === "select" && wallHandles && selected?.type === "wall") {
+      setNdc(e);
+      const hits = raycaster.intersectObjects(wallHandles.children, false);
+      if (hits.length) { pushHistory(); vDrag = { rec: selected, vi: hits[0].object.userData.vi }; controls.enabled = false; }
+    }
+  });
   canvas.addEventListener("pointermove", (e) => {
+    if (vDrag) {
+      const p = groundPoint(e); if (!p) return;
+      vDrag.rec.data.points[vDrag.vi] = [r3(p.x), r3(p.z)];
+      rebuildWall(vDrag.rec); positionWallHandles(vDrag.rec);
+      $("statCoords").textContent = `vertex → ${p.x.toFixed(1)}, ${p.z.toFixed(1)} m`;
+      return;
+    }
     const raw = groundPoint(e);
     const p = mode === "wall" ? wallCursor(raw) : raw;
     if (p) $("statCoords").textContent = `x: ${p.x.toFixed(1)}  z: ${p.z.toFixed(1)} m`;
@@ -232,16 +251,20 @@ function bindPointer() {
     if (mode === "floor" && floorStart) updateFloorPreview(p);
   });
   canvas.addEventListener("pointerup", (e) => {
+    if (vDrag) { vDrag = null; controls.enabled = true; dn = null; refreshList(); return; }
     if (!dn) return;
     const moved = Math.hypot(e.clientX - dn.x, e.clientY - dn.y) > 5;
     dn = null;
     if (moved || draggingGizmo) return;
     tap(e);
   });
+  window.addEventListener("pointerup", () => { if (vDrag) { vDrag = null; controls.enabled = true; refreshList(); } });
   canvas.addEventListener("dblclick", () => { if (mode === "wall") finishWall(); });
   document.addEventListener("keydown", (e) => {
     if (e.target.tagName === "INPUT" || e.target.tagName === "SELECT" || e.target.tagName === "TEXTAREA") return;
     const ctrl = e.ctrlKey || e.metaKey;
+    if (ctrl && e.key.toLowerCase() === "z") { e.preventDefault(); e.shiftKey ? redo() : undo(); return; }
+    if (ctrl && e.key.toLowerCase() === "y") { e.preventDefault(); redo(); return; }
     if (ctrl && e.key.toLowerCase() === "d") { e.preventDefault(); duplicate(selected); return; }
     if (ctrl && e.key.toLowerCase() === "c") { if (selected) clipboard = selected; return; }
     if (ctrl && e.key.toLowerCase() === "v") { if (clipboard) duplicate(clipboard); return; }
@@ -285,7 +308,8 @@ function addObject(type, obj, data) {
 }
 function removeRecord(rec) {
   if (!rec) return;
-  if (selected === rec) { transform?.detach(); selected = null; }
+  pushHistory();
+  if (selected === rec) { transform?.detach(); clearWallHandles(); selected = null; }
   if (clipboard === rec) clipboard = null;
   scene.remove(rec.obj);
   objects = objects.filter((o) => o !== rec);
@@ -295,7 +319,9 @@ function removeRecord(rec) {
 function select(rec) {
   selected = rec;
   transform?.detach();
+  clearWallHandles();
   if (transform && rec && (rec.type === "model" || rec.type === "pin" || rec.type === "text")) transform.attach(rec.obj);
+  if (rec && rec.type === "wall") showWallHandles(rec);
   updateInspector();
   refreshList();
   if (rec) $("statCoords").textContent = `Terpilih: ${rec.data.name || rec.data.text || rec.type}  (Ctrl+D duplikat · Delete hapus)`;
@@ -333,6 +359,7 @@ function updateWallPreview(cursor) {
 }
 function finishWall() {
   if (!wallDraft || wallDraft.pts.length < 2) { cancelWall(); return; }
+  pushHistory();
   const data = {
     points: wallDraft.pts.map((p) => [r3(p.x), r3(p.z)]),
     height: clampNum($("wallH").value, 3, 0.2, 50),
@@ -423,8 +450,10 @@ function doorTap(e) {
     sill: clampNum($("doorSill").value, 0, 0, 40),
   };
   rec.data.openings = rec.data.openings || [];
+  pushHistory();
   rec.data.openings.push(op);
   rebuildWall(rec);
+  if (selected === rec) renderOpenings();
   toast(op.sill > 0 ? "Jendela dibuat" : "Pintu dibuat", true);
 }
 
@@ -437,6 +466,7 @@ function floorTap(p) {
   const a = floorStart, b = p;
   clearFloorPreview(); floorStart = null;
   if (Math.abs(b.x - a.x) < 0.2 || Math.abs(b.z - a.z) < 0.2) { toast("Area terlalu kecil", false); return; }
+  pushHistory();
   const data = {
     x: r3((a.x + b.x) / 2), z: r3((a.z + b.z) / 2),
     w: r3(Math.abs(b.x - a.x)), d: r3(Math.abs(b.z - a.z)),
@@ -484,6 +514,7 @@ function rebuildFloor(rec) {
 //  PINS
 // =====================================================================
 function placePin(p) {
+  pushHistory();
   const g = buildPin();
   g.position.set(p.x, 0, p.z);
   select(addObject("pin", g, { ip: $("pinIp").value.trim(), label: $("pinLabel").value.trim() }));
@@ -525,6 +556,7 @@ function makeTextSprite(d) {
   return spr;
 }
 function placeText(p) {
+  pushHistory();
   const data = { x: r3(p.x), y: 1.6, z: r3(p.z), text: $("textContent").value || "Teks", size: clampNum($("textSize").value, 1, 0.2, 20), color: $("textColor").value };
   select(addObject("text", makeTextSprite(data), data));
 }
@@ -563,6 +595,7 @@ function onModelLoaded(root, data) {
   root.position.x += controls.target.x - c.x;
   root.position.z += controls.target.z - c.z;
   root.position.y += -box.min.y;
+  pushHistory();
   setMode("select");
   select(addObject("model", root, data));
 }
@@ -583,6 +616,7 @@ function updatePlot() {
   scene.add(plotGuide);
 }
 function createWallBox() {
+  pushHistory();
   const [W, D] = areaWD(); const hw = W / 2, hd = D / 2;
   const data = {
     points: [[-hw, -hd], [hw, -hd], [hw, hd], [-hw, hd]].map(([x, z]) => [r3(x), r3(z)]),
@@ -593,6 +627,7 @@ function createWallBox() {
   toast(`Tembok kotak ${W}×${D} m dibuat`, true);
 }
 function createFloorFull() {
+  pushHistory();
   const [W, D] = areaWD();
   const data = { x: 0, z: 0, w: W, d: D, type: "concrete", color: "#3a3f47", order: nextFloorOrder() };
   select(addObject("floor", buildFloor(data), data));
@@ -604,6 +639,7 @@ function createFloorFull() {
 // =====================================================================
 function duplicate(rec) {
   if (!rec) { toast("Pilih objek dulu untuk diduplikat", false); return; }
+  pushHistory();
   let nr = null;
   if (rec.type === "wall") {
     const data = JSON.parse(JSON.stringify(rec.data));
@@ -662,6 +698,7 @@ function show(id, on) { $(id).classList.toggle("hidden", !on); }
 function updateInspector() {
   const selType = selected && selected.type;
   show("secWall", mode === "wall");
+  show("secWallSel", selType === "wall");
   show("secFloor", mode === "floor");
   show("secDoor", mode === "door");
   show("secPin", mode === "pin" || selType === "pin");
@@ -685,6 +722,7 @@ function updateInspector() {
     $("floorSelType").value = selected.data.type || "concrete";
     $("floorSelColor").value = selected.data.color || "#3a3f47";
   }
+  if (selType === "wall") populateWallSel();
 }
 function refreshList() {
   const ul = $("objList");
@@ -742,14 +780,14 @@ $("btnLoad").onclick = () => $("fileScene").click();
 $("fileScene").onchange = (e) => {
   const f = e.target.files[0]; e.target.value = "";
   if (!f) return;
-  f.text().then((t) => { try { loadSceneJSON(JSON.parse(t)); toast("Scene dimuat", true); } catch { toast("JSON tidak valid", false); } });
+  f.text().then((t) => { try { pushHistory(); loadSceneJSON(JSON.parse(t)); toast("Scene dimuat", true); } catch { toast("JSON tidak valid", false); } });
 };
-$("btnNew").onclick = () => { if (confirm("Kosongkan scene?")) clearAll(); };
+$("btnNew").onclick = () => { if (confirm("Kosongkan scene?")) { pushHistory(); clearAll(); } };
 
 function clearAll() {
   objects.slice().forEach((o) => scene.remove(o.obj));
   objects = []; for (const k in byId) delete byId[k];
-  transform?.detach(); selected = null; clipboard = null; floorOrder = 0;
+  transform?.detach(); clearWallHandles(); selected = null; clipboard = null; floorOrder = 0;
   refreshList(); updateInspector();
 }
 function loadSceneJSON(s) {
@@ -769,6 +807,96 @@ function loadSceneJSON(s) {
   });
   if (s.lighting) { Object.assign(lighting, s.lighting); syncLightUI(); applyLighting(); }
   if (s.camera && s.camera.position) { camera.position.fromArray(s.camera.position); controls.target.fromArray(s.camera.target); controls.update(); }
+}
+
+// =====================================================================
+//  B2 — UNDO / REDO   +   B1 — WALL EDIT (handles + openings)
+// =====================================================================
+function pushHistory() {
+  history.push(buildSceneJSON());
+  if (history.length > HISTORY_MAX) history.shift();
+  redoStack = [];
+  updateUndoButtons();
+}
+function restoreState(json) {
+  const cp = camera.position.clone(), ct = controls.target.clone();   // undo tak menggeser kamera
+  loadSceneJSON(json);
+  camera.position.copy(cp); controls.target.copy(ct); controls.update();
+}
+function undo() {
+  if (!history.length) { toast("Tidak ada yang bisa di-undo", false); return; }
+  redoStack.push(buildSceneJSON());
+  restoreState(history.pop());
+  updateUndoButtons(); toast("Undo", true);
+}
+function redo() {
+  if (!redoStack.length) { toast("Tidak ada yang bisa di-redo", false); return; }
+  history.push(buildSceneJSON());
+  restoreState(redoStack.pop());
+  updateUndoButtons(); toast("Redo", true);
+}
+function updateUndoButtons() {
+  if ($("btnUndo")) $("btnUndo").disabled = !history.length;
+  if ($("btnRedo")) $("btnRedo").disabled = !redoStack.length;
+}
+
+// ---- wall vertex handles (drag to reshape) ----
+function showWallHandles(rec) {
+  clearWallHandles();
+  if (!rec || rec.type !== "wall") return;
+  wallHandles = new THREE.Group();
+  const mat = new THREE.MeshBasicMaterial({ color: 0xffcc22 });
+  rec.data.points.forEach((pt, vi) => {
+    const h = new THREE.Mesh(new THREE.SphereGeometry(0.3, 14, 14), mat);
+    h.position.set(pt[0], 0.3, pt[1]); h.userData.vi = vi;
+    wallHandles.add(h);
+  });
+  scene.add(wallHandles);
+}
+function positionWallHandles(rec) {
+  if (!wallHandles || !rec) return;
+  rec.data.points.forEach((pt, vi) => { const h = wallHandles.children[vi]; if (h) h.position.set(pt[0], 0.3, pt[1]); });
+}
+function clearWallHandles() { if (wallHandles) { scene.remove(wallHandles); wallHandles = null; } }
+
+// ---- selected-wall inspector (edit props + openings) ----
+function populateWallSel() {
+  if (selected?.type !== "wall") return;
+  const d = selected.data;
+  $("wsH").value = d.height; $("wsT").value = d.thickness;
+  $("wsColor").value = d.color || "#8fa3c4"; $("wsClosed").checked = !!d.closed;
+  renderOpenings();
+}
+function renderOpenings() {
+  const box = $("wsOpenings"); if (!box || selected?.type !== "wall") return;
+  const ops = selected.data.openings || [];
+  if (!ops.length) { box.innerHTML = `<div class="empty">Belum ada lubang. Pakai mode "Pintu/Jendela".</div>`; return; }
+  box.innerHTML = "";
+  ops.forEach((op, idx) => {
+    const isWin = (op.sill || 0) > 0;
+    const w = document.createElement("div");
+    w.style.cssText = "border:1px solid var(--border);border-radius:8px;padding:8px;margin-bottom:7px";
+    w.innerHTML =
+      `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px">
+         <b style="font-size:11px">${isWin ? "Jendela" : "Pintu"} #${idx + 1} · seg ${op.seg}</b>
+         <span data-del="${idx}" style="color:var(--text-dim);cursor:pointer;font-weight:700">✕</span></div>
+       <div class="row"><label>Lebar</label><input type="number" step="0.1" min="0.2" data-f="width" data-i="${idx}" value="${op.width}"></div>
+       <div class="row"><label>Posisi</label><input type="number" step="0.1" min="0" data-f="dist" data-i="${idx}" value="${op.dist}"></div>
+       <div class="row"><label>Atas</label><input type="number" step="0.1" min="0.3" data-f="top" data-i="${idx}" value="${op.top ?? 2.1}"></div>
+       <div class="row"><label>Ambang</label><input type="number" step="0.1" min="0" data-f="sill" data-i="${idx}" value="${op.sill ?? 0}"></div>`;
+    box.appendChild(w);
+  });
+  box.querySelectorAll("[data-del]").forEach((el) => (el.onclick = () => {
+    pushHistory();
+    selected.data.openings.splice(+el.dataset.del, 1);
+    rebuildWall(selected); renderOpenings(); toast("Lubang dihapus", true);
+  }));
+  box.querySelectorAll("input[data-f]").forEach((el) => (el.onchange = () => {
+    pushHistory();
+    const op = selected.data.openings[+el.dataset.i];
+    op[el.dataset.f] = clampNum(el.value, op[el.dataset.f] ?? 0, 0, 100);
+    rebuildWall(selected);
+  }));
 }
 
 // =====================================================================
@@ -815,12 +943,29 @@ function bindUI() {
     rebuildFloor(selected);
   };
   $("floorSelType").onchange = floorEdit; $("floorSelColor").oninput = floorEdit;
-  $("btnFloorFront").onclick = () => { if (selected?.type === "floor") { selected.data.order = nextFloorOrder(); rebuildFloor(selected); toast("Lantai ke depan", true); } };
+  $("btnFloorFront").onclick = () => { if (selected?.type === "floor") { pushHistory(); selected.data.order = nextFloorOrder(); rebuildFloor(selected); toast("Lantai ke depan", true); } };
   $("btnFloorBack").onclick = () => {
     if (selected?.type !== "floor") return;
+    pushHistory();
     const min = Math.min(0, ...objects.filter((o) => o.type === "floor").map((o) => o.data.order || 0));
     selected.data.order = min - 1; rebuildFloor(selected); toast("Lantai ke belakang", true);
   };
+
+  // B1 — selected wall edit (props); geometri titik lewat drag handle
+  const wallSelEdit = () => {
+    if (selected?.type !== "wall") return;
+    pushHistory();
+    selected.data.height = clampNum($("wsH").value, 3, 0.2, 50);
+    selected.data.thickness = clampNum($("wsT").value, 0.15, 0.02, 5);
+    selected.data.color = $("wsColor").value;
+    selected.data.closed = $("wsClosed").checked;
+    rebuildWall(selected);
+  };
+  ["wsH", "wsT", "wsColor", "wsClosed"].forEach((id) => ($(id).onchange = wallSelEdit));
+
+  // B2 — undo / redo
+  $("btnUndo").onclick = undo;
+  $("btnRedo").onclick = redo;
 
   // generic actions
   $("btnDup").onclick = () => duplicate(selected);
