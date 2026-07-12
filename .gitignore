@@ -11,4 +11,8 @@ data/status_snapshot.json
 # Logs (harian, selalu berubah)
 logs/
 
+# v2 Stechoq Pulse — akun & rahasia sesi (JANGAN di-commit)
+v2/users.json
+v2/.pulse-secret
+
 # Catatan: data/devices.json TETAP dilacak (daftar device / konfigurasi).

@@ -66,6 +66,9 @@ npm install --omit=dev          # cukup express + ws untuk v2
 mkdir -p v2/logs
 nano v2/locations.json
 
+# 2b. buat akun login (WAJIB — tanpa akun tak ada yang bisa masuk)
+node v2/adduser.js <username>         # diminta password (lihat bagian "Login & akun")
+
 # 3. jalankan HANYA monitoring lewat PM2
 pm2 start v2/ecosystem.config.js      # atau: npm run pulse:start
 pm2 save                              # simpan daftar proses
@@ -91,6 +94,23 @@ Edit `env` di `v2/ecosystem.config.js` lalu `pm2 restart stechoq-pulse --update-
 - `V2_PORT` — port internal (default 10102).
 - `V2_HOST` — `127.0.0.1` (hanya via nginx, disarankan) atau hapus untuk akses langsung dari LAN.
 - `MONITOR_WS` — sumber WS fallback bila `locations.json` kosong (opsional).
+- `PULSE_SECRET` — kunci penanda-tangan sesi login. Opsional: kalau tak diisi, dibuat otomatis & disimpan di `v2/.pulse-secret`. Isi sendiri (string acak panjang) bila menjalankan >1 instance.
+
+## 4b. Login & akun
+
+Akses dibatasi **akun terdaftar**. Halaman/`API`/`WS` semuanya butuh sesi login (kecuali halaman login).
+
+```bash
+node v2/adduser.js madani            # tambah akun, diminta password (tersembunyi)
+node v2/adduser.js madani rahasia123 # atau non-interaktif (password sbagai argumen)
+```
+- Akun disimpan di **`v2/users.json`** (password di-hash **scrypt**, bukan plaintext). File ini **tidak** di-commit (`.gitignore`).
+- **Tambah/ubah** akun = jalankan `adduser` lagi (username sama = password di-update). **Hapus** akun = buka `v2/users.json`, hapus entri-nya.
+- Setelah tambah/hapus akun, **tak perlu restart** — dibaca saat login.
+- **Logout**: tombol ⎋ di kanan-atas topbar (atau hapus cookie). Sesi bertahan **7 hari**.
+- Password lupa? Set ulang: `node v2/adduser.js <username>` (menimpa yang lama).
+
+> Cookie sesi otomatis pakai flag **Secure** saat via HTTPS (butuh `X-Forwarded-Proto` dari nginx — sudah ada di contoh config).
 
 ---
 

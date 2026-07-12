@@ -11,7 +11,7 @@
     {
       "id": "example",
       "name": "Example Location",
-      "ws": "ws://10.10.1.223:10011/ws",
+      "ws": "ws://localhost:10011/ws",
       "scene3d": "/scene.example.json",
       "layout2d": "/layout2d.example.json",
       "floors":[

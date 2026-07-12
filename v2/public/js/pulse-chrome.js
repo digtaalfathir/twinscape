@@ -64,6 +64,16 @@
         list.forEach((l) => { const o = document.createElement("option"); o.value = l.id; o.textContent = l.name; if (active && l.id === active.id) o.selected = true; sel.appendChild(o); });
         sel.onchange = () => (location.href = buildURL(sel.value, CURRENT_VIEW));   // pindah lokasi → lantai reset ke default
         nav.appendChild(sel);
+        // tandai lokasi yang server WS-nya down (poll /api/health tiap 20s)
+        const applyHealth = (statuses) => {
+          Array.from(sel.options).forEach((o) => {
+            const l = list.find((x) => x.id === o.value); const nm = l ? l.name : o.value;
+            o.textContent = statuses[o.value] === "down" ? `⚠ ${nm} — offline` : nm;
+          });
+        };
+        const pollHealth = () => fetch("/api/health", { cache: "no-store" }).then((r) => r.json()).then((h) => applyHealth(h.statuses || {})).catch(() => {});
+        pollHealth();
+        setInterval(pollHealth, 20000);
       }
       // dropdown lantai — hanya jika lokasi aktif punya >1 lantai
       if (floors.length > 1) {
@@ -176,5 +186,12 @@
     const url = location.origin + buildURL(activeLocId, CURRENT_VIEW, activeFloorId);
     try { await navigator.clipboard.writeText(url); chromeToast("Link monitor disalin ✓"); }
     catch (e) { chromeToast(url); }
+  };
+
+  // ---- #3: Keluar (hapus sesi) ----
+  const logoutBtn = document.getElementById("logoutBtn");
+  if (logoutBtn) logoutBtn.onclick = async () => {
+    try { await fetch("/api/logout", { method: "POST" }); } catch (e) {}
+    location.href = "/login";
   };
 })();

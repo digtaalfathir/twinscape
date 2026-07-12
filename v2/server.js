@@ -20,6 +20,7 @@ const http = require("http");
 const fs = require("fs");
 const express = require("express");
 const { WebSocketServer, WebSocket } = require("ws");
+const auth = require("./auth");
 
 const PORT = process.env.V2_PORT || 10102;
 const HOST = process.env.V2_HOST || undefined;   // undefined = semua interface; set 127.0.0.1 di belakang nginx
@@ -35,7 +36,45 @@ function loadLocations() {
 let LOCATIONS = loadLocations();
 const findLoc = (id) => LOCATIONS.find((l) => l.id === id) || LOCATIONS[0];
 
+// ---- cek kesehatan tiap lokasi (untuk tanda "offline" di dropdown) ----
+// Coba connect ke WS tiap lokasi secara berkala; catat up/down. Ringan: connect → cek → tutup.
+const healthById = {};                 // id -> "up" | "down"
+function probe(loc) {
+  return new Promise((resolve) => {
+    let ws, done = false;
+    const finish = (s) => { if (done) return; done = true; try { ws && ws.terminate(); } catch {} resolve(s); };
+    try { ws = new WebSocket(loc.ws); } catch { return resolve("down"); }
+    const t = setTimeout(() => finish("down"), 5000);   // tak connect dalam 5s = down
+    ws.on("open", () => { clearTimeout(t); finish("up"); });
+    ws.on("error", () => { clearTimeout(t); finish("down"); });
+  });
+}
+async function runHealthChecks() {
+  await Promise.all(LOCATIONS.map(async (l) => { healthById[l.id] = await probe(l); }));
+}
+
 const app = express();
+app.set("trust proxy", 1);          // hormati X-Forwarded-Proto dari nginx (utk cookie Secure)
+app.use(express.json());
+
+// ---- LOGIN (publik — tak butuh sesi) ----
+app.get("/login", (_req, res) => res.sendFile(path.join(__dirname, "public", "login.html")));
+app.post("/api/login", (req, res) => {
+  const { username, password } = req.body || {};
+  const user = auth.loadUsers().find((u) => u.username === username);
+  if (!user || !auth.verifyPassword(password || "", user)) return res.status(401).json({ error: "Username atau password salah." });
+  const secure = req.secure ? "; Secure" : "";
+  res.setHeader("Set-Cookie", `${auth.COOKIE}=${auth.makeToken(username)}; HttpOnly; SameSite=Lax; Path=/; Max-Age=${auth.MAXAGE}${secure}`);
+  res.json({ ok: true });
+});
+app.post("/api/logout", (_req, res) => {
+  res.setHeader("Set-Cookie", `${auth.COOKIE}=; HttpOnly; SameSite=Lax; Path=/; Max-Age=0`);
+  res.json({ ok: true });
+});
+
+// ---- mulai sini WAJIB login ----
+app.use(auth.middleware);
+
 // daftar tempat untuk frontend (URL WS upstream TIDAK diekspos)
 app.get("/api/locations", (_req, res) => {
   res.json({
@@ -47,12 +86,17 @@ app.get("/api/locations", (_req, res) => {
     })),
   });
 });
+// status koneksi per lokasi (up/down) untuk tanda di dropdown
+app.get("/api/health", (_req, res) => res.json({ statuses: healthById }));
 app.use(express.static(path.join(__dirname, "public")));
 
 const server = http.createServer(app);
 
-// ---- WS proxy: /ws?loc=<id> → WS server tempat itu (yang sudah running) ----
-const wss = new WebSocketServer({ server, path: "/ws" });
+// ---- WS proxy: /ws?loc=<id> → WS server tempat itu (yang sudah running). Butuh sesi login. ----
+const wss = new WebSocketServer({
+  server, path: "/ws",
+  verifyClient: (info, cb) => (auth.userFromReq(info.req) ? cb(true) : cb(false, 401, "Unauthorized")),
+});
 wss.on("connection", (client, req) => {
   let loc;
   try { loc = findLoc(new URL(req.url, "http://x").searchParams.get("loc")); }
@@ -74,4 +118,6 @@ server.listen(PORT, HOST, () => {
   LOCATIONS.forEach((l) => console.log(`  Lokasi  : ${l.id}  ←  ${l.ws}`));
   console.log(`  WS proxy: /ws?loc=<id>   (default: ${LOCATIONS[0].id})`);
   console.log("========================================");
+  runHealthChecks();                       // cek awal + tiap 20s
+  setInterval(runHealthChecks, 20000).unref();
 });

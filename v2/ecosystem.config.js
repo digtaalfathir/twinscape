@@ -26,6 +26,7 @@ module.exports = {
         V2_PORT: 10102,               // port internal; nginx yang menghadap domain
         V2_HOST: "127.0.0.1",         // hanya lokal (diakses via nginx). Hapus baris ini utk akses langsung dari LAN
         // MONITOR_WS: "ws://10.10.1.223:10011/ws",  // opsional: fallback bila locations.json kosong
+        // PULSE_SECRET: "isi-string-acak-panjang",  // opsional: kunci sesi login (default: auto → v2/.pulse-secret)
       },
       error_file: path.join(__dirname, "logs/pulse-error.log"),
       out_file: path.join(__dirname, "logs/pulse-out.log"),
