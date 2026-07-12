@@ -11,7 +11,11 @@
     "pm2:start": "pm2 start ecosystem.config.js",
     "pm2:stop": "pm2 stop hardware-monitoring",
     "pm2:restart": "pm2 restart hardware-monitoring",
-    "pm2:logs": "pm2 logs hardware-monitoring"
+    "pm2:logs": "pm2 logs hardware-monitoring",
+    "pulse:start": "pm2 start v2/ecosystem.config.js",
+    "pulse:restart": "pm2 restart stechoq-pulse",
+    "pulse:stop": "pm2 stop stechoq-pulse",
+    "pulse:logs": "pm2 logs stechoq-pulse"
   },
   "dependencies": {
     "express": "^4.21.0",

@@ -33,8 +33,10 @@ body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--t
 .topbar{position:fixed;top:0;left:0;right:0;z-index:20;height:58px;display:flex;align-items:center;gap:18px;
   padding:0 18px;background:var(--panel);backdrop-filter:blur(22px);border-bottom:1px solid var(--border);box-shadow:0 1px 0 rgba(0,0,0,.15)}
 .brand{display:flex;align-items:center;gap:10px;font-weight:700;font-size:16px;color:var(--text-bright);letter-spacing:.2px}
-.brand .pulse{width:10px;height:10px;border-radius:50%;background:var(--accent);animation:pulse 2s infinite}
-@keyframes pulse{0%{box-shadow:0 0 0 0 var(--accent-soft)}70%{box-shadow:0 0 0 8px transparent}100%{box-shadow:0 0 0 0 transparent}}
+.brand-mark{display:flex;flex-shrink:0;filter:drop-shadow(0 3px 8px rgba(37,99,235,.35))}
+.brand-mark svg{display:block}
+.brand-live{transform-box:fill-box;transform-origin:center;animation:brand-beat 1.8s ease-in-out infinite}
+@keyframes brand-beat{0%,100%{opacity:.4}50%{opacity:1}}
 .brand b{color:var(--accent);font-weight:800}
 .seg{display:flex;gap:3px;padding:3px;border:1px solid var(--border);border-radius:11px;background:var(--hover)}
 .seg button{padding:6px 18px;border:none;border-radius:8px;background:transparent;color:var(--text);font:700 13px Inter,sans-serif;cursor:pointer;transition:all .15s}

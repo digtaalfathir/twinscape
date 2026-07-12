@@ -8,6 +8,7 @@
  *
  *   npm run v2                 → http://localhost:10102
  *   V2_PORT=xxxx               → ganti port
+ *   V2_HOST=127.0.0.1          → bind ke host tertentu (mis. di belakang nginx). default: semua interface
  *   MONITOR_WS=ws://host/ws     → fallback sumber default (kalau locations.json tak ada)
  *
  * API: GET /api/locations → daftar tempat (id, name, scene3d, layout2d) untuk
@@ -21,6 +22,7 @@ const express = require("express");
 const { WebSocketServer, WebSocket } = require("ws");
 
 const PORT = process.env.V2_PORT || 10102;
+const HOST = process.env.V2_HOST || undefined;   // undefined = semua interface; set 127.0.0.1 di belakang nginx
 
 // ---- daftar lokasi (sumber WS per tempat) ----
 function loadLocations() {
@@ -65,10 +67,10 @@ wss.on("connection", (client, req) => {
   client.on("error", closeBoth);
 });
 
-server.listen(PORT, () => {
+server.listen(PORT, HOST, () => {
   console.log("========================================");
-  console.log("  v2 MONITORING — viewer (konsumen WS eksternal)");
-  console.log(`  App     : http://localhost:${PORT}`);
+  console.log("  Stechoq Pulse (v2) — viewer monitoring (konsumen WS eksternal)");
+  console.log(`  App     : http://${HOST || "localhost"}:${PORT}`);
   LOCATIONS.forEach((l) => console.log(`  Lokasi  : ${l.id}  ←  ${l.ws}`));
   console.log(`  WS proxy: /ws?loc=<id>   (default: ${LOCATIONS[0].id})`);
   console.log("========================================");
