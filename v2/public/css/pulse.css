@@ -1,0 +1,144 @@
+/* =====================================================================
+   Stechoq Pulse — monitoring viewer (theme-aware: dark / light, blue accent)
+   Cisco-Spaces-inspired, minimal. Used by index.html (3D viewer, scene-view.js).
+   ===================================================================== */
+*{margin:0;padding:0;box-sizing:border-box}
+
+:root, :root[data-theme="dark"]{
+  --bg:#0a0e18; --panel:rgba(17,24,39,.82); --panel-solid:#111827;
+  --border:rgba(255,255,255,.09); --hover:rgba(255,255,255,.06);
+  --text:#e5ecf6; --text-dim:#8ea0bd; --text-bright:#f8fafc;
+  --accent:#3b82f6; --accent-soft:rgba(59,130,246,.16);
+  --up:#22c55e; --down:#ef4444; --high:#f59e0b; --unknown:#64748b;
+  --shadow:0 14px 40px rgba(0,0,0,.5);
+}
+:root[data-theme="light"]{
+  --bg:#eef2f8; --panel:rgba(255,255,255,.88); --panel-solid:#ffffff;
+  --border:rgba(15,23,42,.1); --hover:rgba(15,23,42,.05);
+  --text:#1e293b; --text-dim:#64748b; --text-bright:#0f172a;
+  --accent:#2563eb; --accent-soft:rgba(37,99,235,.12);
+  --up:#16a34a; --down:#dc2626; --high:#d97706; --unknown:#94a3b8;
+  --shadow:0 14px 40px rgba(30,41,59,.18);
+}
+
+html,body{height:100%}
+body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--text);overflow:hidden}
+#stage{position:fixed;inset:0}
+#glcanvas{position:absolute;inset:0;width:100%;height:100%;display:block;touch-action:none}
+#labelLayer{position:absolute;inset:0;overflow:hidden;pointer-events:none}
+
+/* ---------- top bar ---------- */
+.topbar{position:fixed;top:0;left:0;right:0;z-index:20;height:56px;display:flex;align-items:center;gap:16px;
+  padding:0 18px;background:var(--panel);backdrop-filter:blur(16px);border-bottom:1px solid var(--border)}
+.brand{display:flex;align-items:center;gap:9px;font-weight:800;font-size:16px;color:var(--text-bright);letter-spacing:.2px}
+.brand .pulse{width:11px;height:11px;border-radius:50%;background:var(--accent);box-shadow:0 0 0 0 var(--accent);animation:pulse 2s infinite}
+@keyframes pulse{0%{box-shadow:0 0 0 0 var(--accent-soft)}70%{box-shadow:0 0 0 9px transparent}100%{box-shadow:0 0 0 0 transparent}}
+.brand b{color:var(--accent)}
+.seg{display:flex;border:1px solid var(--border);border-radius:10px;overflow:hidden}
+.seg button{padding:7px 18px;border:none;background:transparent;color:var(--text-dim);font:700 13px Inter,sans-serif;cursor:pointer;transition:all .15s}
+.seg button.active{background:var(--accent);color:#fff}
+.seg button:disabled{opacity:.45;cursor:not-allowed}
+.seg button:not(.active):not(:disabled):hover{background:var(--hover);color:var(--text)}
+.tb-spacer{flex:1}
+.tb-item{display:flex;align-items:center;gap:7px;font-size:12.5px;font-weight:600;color:var(--text-dim)}
+.conn-dot{width:8px;height:8px;border-radius:50%;background:var(--down);transition:background .3s}
+.conn-dot.connected{background:var(--up);box-shadow:0 0 8px var(--up)}
+.icon-btn{width:34px;height:34px;border:1px solid var(--border);border-radius:9px;background:transparent;color:var(--text);
+  font-size:15px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .15s}
+.icon-btn:hover{background:var(--hover);border-color:var(--accent)}
+
+/* ---------- left stat panel (Cisco-style) ---------- */
+.statpanel{position:fixed;top:76px;left:18px;z-index:15;width:220px;background:var(--panel);backdrop-filter:blur(16px);
+  border:1px solid var(--border);border-radius:16px;padding:18px;box-shadow:var(--shadow)}
+.statpanel .loc{font-size:11px;font-weight:700;letter-spacing:1px;color:var(--text-dim);text-transform:uppercase}
+.statpanel h2{font-size:21px;font-weight:800;color:var(--text-bright);margin:2px 0 16px}
+.big{display:flex;align-items:baseline;gap:8px;margin-bottom:12px}
+.big b{font-size:42px;font-weight:800;line-height:1;color:var(--up)}
+.big span{font-size:12px;color:var(--text-dim)}
+.tiles{display:flex;gap:8px}
+.tile{flex:1;background:var(--hover);border-radius:11px;padding:10px 8px;text-align:center}
+.tile b{font-size:20px;font-weight:800;display:block}
+.tile.up b{color:var(--up)} .tile.down b{color:var(--down)} .tile.total b{color:var(--accent)}
+.tile span{font-size:10px;color:var(--text-dim)}
+.health{margin-top:14px;font-size:11px;color:var(--text-dim);display:flex;justify-content:space-between}
+.health b{color:var(--text-bright)}
+.bar{height:7px;border-radius:5px;background:var(--hover);margin-top:6px;overflow:hidden}
+.bar>i{display:block;height:100%;background:linear-gradient(90deg,var(--accent),var(--up));transition:width .4s}
+.statpanel .sub{margin-top:12px;font-size:10.5px;color:var(--text-dim);line-height:1.5}
+
+/* ---------- bottom-right controls + hint ---------- */
+.ctrls{position:fixed;bottom:18px;right:18px;z-index:15;display:flex;gap:8px}
+.ctrls .icon-btn{background:var(--panel);backdrop-filter:blur(10px)}
+.hint{position:fixed;bottom:18px;left:18px;z-index:15;font-size:11px;color:var(--text-dim);
+  background:var(--panel);border:1px solid var(--border);border-radius:9px;padding:8px 12px;backdrop-filter:blur(10px);line-height:1.6}
+.hint kbd{font-family:monospace;background:var(--hover);border:1px solid var(--border);border-radius:4px;padding:1px 5px;font-size:10px}
+
+/* ---------- floating 3D labels (CSS2D) ---------- */
+.mk3d-label{font-family:'Inter',sans-serif;font-size:11px;font-weight:600;color:var(--text-bright);
+  background:var(--panel-solid);border:1px solid var(--border);border-radius:6px;padding:2px 8px;white-space:nowrap;box-shadow:var(--shadow)}
+.mk3d-label.down{border-color:var(--down);color:var(--down)}
+.room3d-label{font-family:'Inter',sans-serif;font-size:11px;font-weight:700;letter-spacing:.5px;color:var(--text-dim);
+  opacity:.8;white-space:nowrap;text-shadow:0 1px 4px rgba(0,0,0,.5)}
+.room3d-label small{display:block;font-size:8.5px;font-weight:600;opacity:.7;text-align:center}
+
+/* ---------- tooltip ---------- */
+.fm-tooltip{position:absolute;z-index:30;pointer-events:none;opacity:0;transform:translateY(4px);transition:opacity .12s,transform .12s;
+  background:var(--panel-solid);border:1px solid var(--border);border-radius:10px;padding:10px 13px;min-width:180px;box-shadow:var(--shadow)}
+.fm-tooltip.show{opacity:1;transform:translateY(0)}
+.fm-tooltip .tt-name{font-size:13px;font-weight:700;color:var(--text-bright);margin-bottom:2px}
+.fm-tooltip .tt-ip{font-size:10px;color:var(--text-dim);font-family:monospace;margin-bottom:8px}
+.fm-tooltip .tt-row{display:flex;justify-content:space-between;gap:16px;font-size:11px;margin-top:3px}
+.fm-tooltip .tt-row span:first-child{color:var(--text-dim)}
+.fm-tooltip .tt-row span:last-child{font-weight:700;color:var(--text-bright)}
+.tt-up{color:var(--up)!important} .tt-down{color:var(--down)!important}
+
+/* ---------- detail panel ---------- */
+.fm-detail{position:fixed;top:0;right:0;height:100%;width:340px;z-index:25;background:var(--panel-solid);
+  border-left:1px solid var(--border);transform:translateX(100%);transition:transform .28s cubic-bezier(.4,0,.2,1);overflow-y:auto;box-shadow:var(--shadow)}
+.fm-detail.open{transform:translateX(0)}
+.dt-head{display:flex;justify-content:space-between;align-items:flex-start;padding:20px 20px 14px;border-bottom:1px solid var(--border);
+  position:sticky;top:0;background:var(--panel-solid)}
+.dt-head h2{font-size:16px;font-weight:700;color:var(--text-bright);max-width:230px}
+.dt-head .dt-ip{font-size:11px;color:var(--text-dim);font-family:monospace;margin-top:3px}
+.dt-close{background:none;border:none;color:var(--text-dim);font-size:20px;cursor:pointer;line-height:1;padding:2px 6px;border-radius:6px}
+.dt-close:hover{color:var(--text-bright);background:var(--hover)}
+.badge{font-size:9px;font-weight:800;padding:2px 7px;border-radius:5px;letter-spacing:.4px;vertical-align:middle}
+.sev-CRITICAL{background:rgba(239,68,68,.15);color:#f87171} .sev-HIGH{background:rgba(245,158,11,.15);color:#fbbf24}
+.sev-MEDIUM{background:rgba(59,130,246,.15);color:#93c5fd} .sev-LOW{background:rgba(107,114,128,.15);color:#cbd5e1}
+.dt-body{padding:16px 20px 30px}
+.dt-status-banner{display:flex;align-items:center;gap:10px;padding:12px 14px;border-radius:10px;font-weight:700;font-size:14px;margin-bottom:16px}
+.dt-status-banner.up{background:rgba(34,197,94,.12);color:var(--up);border:1px solid rgba(34,197,94,.25)}
+.dt-status-banner.down{background:rgba(239,68,68,.12);color:var(--down);border:1px solid rgba(239,68,68,.25)}
+.dt-section{font-size:10px;font-weight:700;letter-spacing:.7px;text-transform:uppercase;color:var(--text-dim);margin:18px 0 10px}
+.dt-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.dt-item{background:var(--hover);border:1px solid var(--border);border-radius:9px;padding:10px 12px}
+.dt-item .dt-label{font-size:10px;color:var(--text-dim);margin-bottom:4px}
+.dt-item .dt-val{font-size:15px;font-weight:700;color:var(--text-bright)}
+.dt-val.up{color:var(--up)} .dt-val.down{color:var(--down)}
+.dt-meta{font-size:12px;color:var(--text);line-height:1.5}
+.dt-meta .m-row{display:flex;gap:8px;padding:6px 0;border-bottom:1px solid var(--border)}
+.dt-meta .m-row .m-k{color:var(--text-dim);min-width:70px}
+.dt-meta .m-row .m-v{color:var(--text-bright);font-weight:500}
+.dt-ev{display:flex;align-items:center;gap:8px;font-size:11px;padding:5px 0}
+.dt-ev .ev-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+.dt-ev .ev-dot.up{background:var(--up)} .dt-ev .ev-dot.down{background:var(--down)}
+.dt-ev .ev-time{color:var(--text-dim);font-family:monospace;font-size:10px}
+.dt-ev .ev-status{margin-left:auto;font-weight:700}
+.dt-empty{color:var(--text-dim);font-size:11px;font-style:italic}
+
+/* ---------- legend ---------- */
+.fm-legend{position:fixed;left:18px;bottom:64px;z-index:15;background:var(--panel);border:1px solid var(--border);
+  border-radius:10px;padding:10px 13px;backdrop-filter:blur(12px)}
+.fm-legend .lg-title{font-size:10px;font-weight:700;letter-spacing:.6px;color:var(--text-dim);text-transform:uppercase;margin-bottom:6px}
+.fm-legend .lg-row{display:flex;align-items:center;gap:8px;font-size:11px;margin-top:4px;color:var(--text)}
+.lg-dot{width:11px;height:11px;border-radius:50%;flex-shrink:0}
+
+/* ---------- splash ---------- */
+.fm-splash{position:fixed;inset:0;z-index:40;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:14px;
+  background:var(--bg);text-align:center;padding:20px}
+.fm-splash .spinner{width:38px;height:38px;border:3px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin 1s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.fm-splash .msg{font-size:13px;color:var(--text-dim);max-width:440px;line-height:1.6}
+.fm-splash.error .spinner{display:none}
+.fm-splash.error .msg{color:var(--down)}
+.fm-splash.hidden{display:none}

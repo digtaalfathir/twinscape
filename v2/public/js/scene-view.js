@@ -26,7 +26,7 @@ const $ = (id) => document.getElementById(id);
 
 // ---- three ----
 let scene, camera, renderer, labelRenderer, controls, raycaster, clock;
-let hemi, amb, keyLight, built;
+let hemi, amb, keyLight, built, groundMesh;
 const loader = new GLTFLoader();
 const ndc = new THREE.Vector2();
 
@@ -88,15 +88,19 @@ function initThree() {
   keyLight.position.set(40, 60, 30);       // arah default (dioverride scene.lighting)
   scene.add(hemi, amb, keyLight);
 
-  const ground = new THREE.Mesh(
+  groundMesh = new THREE.Mesh(
     new THREE.PlaneGeometry(600, 600),
-    // gelap & polos (menyatu dengan background; envMapIntensity 0 supaya tak "memutih")
+    // polos (menyatu dengan background; envMapIntensity 0 supaya tak "memutih")
     new THREE.MeshStandardMaterial({ color: 0x090d15, roughness: 1, metalness: 0, envMapIntensity: 0 })
   );
-  ground.rotation.x = -Math.PI / 2;
-  ground.position.y = -0.25;             // di bawah slab lantai → tepi lantai kelihatan
-  scene.add(ground);
+  groundMesh.rotation.x = -Math.PI / 2;
+  groundMesh.position.y = -0.25;         // di bawah slab lantai → tepi lantai kelihatan
+  scene.add(groundMesh);
   // A3: grid dihilangkan (default off, tanpa toggle)
+
+  // tema gelap/terang: kanvas 3D ikut. Baca tema awal + dengarkan perubahan dari topbar.
+  applyTheme(document.documentElement.getAttribute("data-theme") || "dark");
+  window.addEventListener("pulse-theme", (e) => applyTheme(e.detail));
 
   built = new THREE.Group();
   scene.add(built);
@@ -141,16 +145,28 @@ function onResize() {
 //  LOAD SCENE
 // =====================================================================
 async function loadDefaultScene() {
-  const url = new URLSearchParams(location.search).get("scene") || "/scene.json";
-  try {
-    const res = await fetch(url, { cache: "no-store" });
+  const forced = new URLSearchParams(location.search).get("scene");
+  const url = forced || "/scene.json";
+  const tryLoad = async (u) => {
+    const res = await fetch(u, { cache: "no-store" });
     const data = JSON.parse(await res.text());   // throws if it's the SPA-fallback HTML
-    buildFromScene(data, url);
+    buildFromScene(data, u);
     hideSplash();
+  };
+  try {
+    await tryLoad(url);
   } catch (e) {
+    // tidak dipaksa via ?scene= → coba contoh bawaan supaya langsung ada tampilan
+    if (!forced) {
+      try {
+        await tryLoad("/scene.example.json");
+        $("sceneInfo").textContent = "Contoh (scene.example.json)";
+        return;
+      } catch (_) { /* jatuh ke pesan bantuan */ }
+    }
     splash.classList.remove("hidden"); splash.classList.remove("error");
     splashMsg.innerHTML = `Belum ada <b>${url}</b>.<br>Export dari Scene Builder → taruh file <b>scene.json</b> di folder <b>public/</b>, ` +
-      `atau klik tombol <b>“Muat scene.json”</b> di atas untuk mencoba file dari komputer.`;
+      `atau klik tombol <b>📂 Muat scene.json</b> (kanan bawah) untuk mencoba file dari komputer.`;
   }
 }
 $("btnLoad").onclick = () => $("fileScene").click();
@@ -408,6 +424,17 @@ function updateSummary(devices) {
   const score = total > 0 ? ((up / total) * 100).toFixed(1) : "100.0";
   const el = $("healthScore"); el.textContent = `${score}%`;
   el.style.color = score >= 95 ? "var(--up)" : score >= 80 ? "var(--high)" : "var(--down)";
+  const bar = $("healthBar"); if (bar) bar.style.width = `${score}%`;
+}
+
+// tema gelap/terang untuk kanvas 3D (background + tanah + intensitas cahaya ambien)
+function applyTheme(theme) {
+  if (!scene) return;
+  const light = theme === "light";
+  scene.background = new THREE.Color(light ? 0xe7edf5 : 0x080b14);
+  if (groundMesh) groundMesh.material.color.setHex(light ? 0xd4deea : 0x090d15);
+  if (hemi) hemi.intensity = light ? 0.85 : 0.45;
+  if (amb) amb.intensity = light ? 0.5 : 0.22;
 }
 
 // =====================================================================

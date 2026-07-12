@@ -4,7 +4,7 @@
     {
       "id": "factory-4",
       "name": "Factory 4",
-      "ws": "ws://localhost:10101/ws",
+      "ws": "ws://10.10.1.223:10011/ws",
       "scene3d": "/scene.json",
       "layout2d": "/layout2d.json"
     }
