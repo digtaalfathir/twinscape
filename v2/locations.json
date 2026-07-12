@@ -13,7 +13,11 @@
       "name": "Example Location",
       "ws": "ws://10.10.1.223:10011/ws",
       "scene3d": "/scene.example.json",
-      "layout2d": "/layout2d.example.json"
+      "layout2d": "/layout2d.example.json",
+      "floors":[
+        {"id":"l1","name":"Lantai 1","scene3d":"/scene.example.json","layout2d":"/layout2d.example.json"},
+        {"id":"l2","name":"Lantai 2","scene3d":"/scene.example.json","layout2d":"/layout2d.example.json"}
+      ]
     }
   ]
 }

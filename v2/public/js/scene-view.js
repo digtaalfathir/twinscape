@@ -37,6 +37,7 @@ const rayTargets = [];      // beacon balls (raycast)
 const labelEls = [];        // device labels (toggle)
 let selectedIp = null, dtTimer = null, labelsVisible = true, filterMode = "all", alertBaseline = false;
 let zones3d = [];           // E2/E7 — zona = lantai (bounds XZ + mesh utk warna)
+const ZONE_TINT = false;    // E7 pewarnaan lantai saat DOWN — dimatikan sementara (set true utk aktifkan)
 let camAnim = null, savedCam = null, lastT = 0;   // klik→zoom ke titik, tutup→balik
 const modelCache = {};      // A2: url -> Promise<gltf.scene> (load-once, lalu clone)
 
@@ -562,7 +563,7 @@ function updateZones() {
     z.total++;
     if (o.status === "UP") z.up++; else if (o.status === "DOWN") z.down++;
   }
-  zones3d.forEach((z) => { if (z.mesh) z.mesh.material.color.setHex(z.down > 0 ? 0x7a2533 : z.baseHex); });   // E7: lantai memerah saat ada DOWN
+  if (ZONE_TINT) zones3d.forEach((z) => { if (z.mesh) z.mesh.material.color.setHex(z.down > 0 ? 0x7a2533 : z.baseHex); });   // E7 (dimatikan)
   renderZonePanel(zones3d);
 }
 function renderZonePanel(zones) {

@@ -47,7 +47,7 @@ flat/clean, low-poly** (Cisco pun begitu — lihat referensi), dan gampang diraw
 | Aset 3D | `v2/public/vendor/three/`, `v2/public/models/` | Three.js ter-vendor (offline), folder model |
 
 **Linking device sudah jalan:** samakan IP (`pin.ip`/`model.deviceIp` = `device.ip`) → runtime warnai marker hijau/merah.
-**Fase A–F selesai** (kecuali E6 library aset & LOD runtime). Berikutnya: **Fase G (package npm)** bila diperlukan.
+**Fase A–F selesai.** E6 (library aset) & LOD runtime **di-skip**; **Fase G (package npm) tidak dikerjakan**. E2 (panel zona) disembunyikan & E7 (warna zona) dimatikan sementara — fungsi tetap, tinggal diaktifkan bila perlu.
 
 ---
 
@@ -128,12 +128,12 @@ flat/clean, low-poly** (Cisco pun begitu — lihat referensi), dan gampang diraw
 ### Fase E — Kelengkapan Fitur ala Cisco
 
 - [x] **E1 — Klik device → panel detail** (S) — avg/peak, uptime, downtime, events; termasuk state "tidak ada data live".
-- [x] **E2 — Panel per-zona / occupancy** (M) — `#zonePanel` up/total per zona; 2D=ruangan, 3D=lantai (pemetaan by koordinat). Klik zona → fly-to.
+- [x] **E2 — Panel per-zona / occupancy** (M) — `#zonePanel` up/total per zona; 2D=ruangan, 3D=lantai. Klik zona → fly-to. *(panel DISEMBUNYIKAN sementara di UI via `#zonePanel{display:none}`; fungsi utuh)*
 - [x] **E3 — Cari device / "Where am I"** (S) — kotak cari (nama/IP) → sorot & fly-to (hook `pulseGetTargets`/`pulseFocus`).
 - [x] **E4 — Filter & sorot** (S) — Semua/Up/Down redupkan yg tak cocok; DOWN berkedip.
 - [x] **E5 — Multi-lantai / multi-gedung** (M) — `floors:[{id,name,scene3d,layout2d}]`; dropdown lantai; deep-link `?floor=`; WS tetap per-lokasi.
-- [ ] **E6 — Library equipment 3D** (M) — kumpulan `.glb` siap pakai (mesin inject, forklift, rak, gate RFID). *(tugas aset di Builder — belum)*
-- [x] **E7 — Zona berwarna status** (M) — ruangan 2D `.zone-down`; lantai 3D `material.color` memerah saat ada DOWN.
+- [-] **E6 — Library equipment 3D** (M) — ⏭️ **SKIP** (tidak dikerjakan dulu).
+- [x] **E7 — Zona berwarna status** (M) — ruangan 2D `.zone-down`; lantai 3D `material.color` memerah saat DOWN. *(DIMATIKAN sementara via flag `ZONE_TINT=false`)*
 - [x] **E8 — Alert/notifikasi** (M) — toast down/pulih (klik→fly-to) + tombol suara (WebAudio); hanya utk perubahan, bukan snapshot awal.
 - [x] **E9 — Kartu status "Cisco"** (S) — ikon severity di badge + mini-trend status (24 event terakhir).
 
@@ -148,14 +148,13 @@ flat/clean, low-poly** (Cisco pun begitu — lihat referensi), dan gampang diraw
 
 ---
 
-### Fase G — Package npm sendiri  *(catatan: "buat npm sendiri untuk berbagai function")*
+### Fase G — Package npm sendiri  ❌ TIDAK DIKERJAKAN (keputusan 2026-07-12)
 
-- [ ] **G1 — Ekstrak core reusable** (L)
-  - Modul: builder geometri (`buildWall/buildFloor/makeTextSprite`), loader `scene.json`, sistem linking-by-IP, komponen kartu/pin.
-  - API bersih, tanpa dependensi ke app ini.
-- [ ] **G2 — Struktur package** (M) — `@rifky/digital-twin-monitor` (nama contoh), build ESM, dokumentasi, contoh.
-- [ ] **G3 — Publish & versioning** (S) — npm (privat/publik), semver, changelog.
-- *Manfaat:* dipakai ulang di proyek lain (bukan cuma monitoring hardware ini).
+> Diputuskan tidak dilanjutkan. Disimpan sebagai catatan saja.
+
+- [-] ~~**G1 — Ekstrak core reusable** (L)~~
+- [-] ~~**G2 — Struktur package** (M)~~
+- [-] ~~**G3 — Publish & versioning** (S)~~
 
 ---
 

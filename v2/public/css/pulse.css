@@ -266,6 +266,9 @@ body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--t
 .zone-stat{font-size:11px;color:var(--text-dim);font-variant-numeric:tabular-nums;flex-shrink:0}
 .zone-stat b{color:var(--up);font-weight:700}
 .zone-stat b.has-down{color:var(--down)}
+/* per-zona (E2) DISEMBUNYIKAN dulu di UI — fungsi tetap jalan (pemetaan zona + pewarnaan E7).
+   Hapus 1 baris di bawah ini untuk memunculkan panel zona lagi. */
+#zonePanel{display:none!important}
 
 /* E7 — zona 2D berwarna status (CSS menang atas atribut fill inline) */
 .lo-room.zone-down{fill:rgba(239,68,68,.16);stroke:var(--down);stroke-width:2}

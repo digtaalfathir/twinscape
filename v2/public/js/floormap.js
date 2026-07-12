@@ -15,6 +15,7 @@ const pinByIp = {};         // ip -> pin {x,y,label}
 const lastStatus = {};      // ip -> status sebelumnya (deteksi transisi utk alert E8)
 let selectedIp = null, dtTimer = null, filterMode = "all", alertBaseline = false;
 let zones2d = [], roomEls = [];   // E2/E7 — zona = ruangan (rect utk warna)
+const ZONE_TINT = false;          // E7 pewarnaan ruangan saat DOWN — dimatikan sementara (set true utk aktifkan)
 
 const SVG_NS = "http://www.w3.org/2000/svg";
 const svg = document.getElementById("floormap");
@@ -418,7 +419,7 @@ function updateZones() {
     let up = 0, down = 0;
     z.ips.forEach((ip) => { const d = deviceByIp[ip]; if (d && d.status === "UP") up++; else if (d && d.status === "DOWN") down++; });
     z.up = up; z.down = down; z.total = z.ips.length;
-    if (z.rect) { z.rect.classList.toggle("zone-down", down > 0); z.rect.classList.toggle("zone-up", down === 0 && up > 0); }   // E7
+    if (ZONE_TINT && z.rect) { z.rect.classList.toggle("zone-down", down > 0); z.rect.classList.toggle("zone-up", down === 0 && up > 0); }   // E7 (dimatikan)
   });
   renderZonePanel();
 }
