@@ -124,13 +124,14 @@ function connect() {
   ws.onmessage = (e) => {
     let msg; try { msg = JSON.parse(e.data); } catch { return; }
     if (msg.type === "cmd_result") return;
+    if (msg.type === "pulse_status") { setConn(msg.up, msg.up ? "Connected" : "Sumber offline"); return; }
     if (msg.devices) applyStatus(msg.devices);   // applyStatus → updateSummary
     if (msg.timestamp) { const lu = $("lastUpdate"); if (lu) lu.textContent = `Update ${msg.timestamp}`; }
   };
 }
-function setConn(ok) {
+function setConn(ok, label) {
   $("connDot").classList.toggle("connected", ok);
-  $("connLabel").textContent = ok ? "Connected" : "Disconnected";
+  $("connLabel").textContent = label || (ok ? "Connected" : "Disconnected");
 }
 // recolour each pin-marker by its matching device's live status (grey if unmapped)
 function applyStatus(devices) {
@@ -243,9 +244,11 @@ function openDetail(ip) {
   Object.entries(markerByIp).forEach(([k, el]) => el.classList.toggle("selected", k === ip));
   renderDetail(deviceByIp[ip] || { ip, name: (pinByIp[ip] && pinByIp[ip].label) || ip });
   detailPanel.classList.add("open");
+  document.body.classList.add("detail-open");
 }
 function closeDetail() {
   detailPanel.classList.remove("open");
+  document.body.classList.remove("detail-open");
   if (selectedIp && markerByIp[selectedIp]) markerByIp[selectedIp].classList.remove("selected");
   selectedIp = null;
   if (dtTimer) { clearInterval(dtTimer); dtTimer = null; }

@@ -36,21 +36,25 @@ function loadLocations() {
 let LOCATIONS = loadLocations();
 const findLoc = (id) => LOCATIONS.find((l) => l.id === id) || LOCATIONS[0];
 
-// ---- cek kesehatan tiap lokasi (untuk tanda "offline" di dropdown) ----
-// Coba connect ke WS tiap lokasi secara berkala; catat up/down. Ringan: connect → cek → tutup.
-const healthById = {};                 // id -> "up" | "down"
-function probe(loc) {
-  return new Promise((resolve) => {
-    let ws, done = false;
-    const finish = (s) => { if (done) return; done = true; try { ws && ws.terminate(); } catch {} resolve(s); };
-    try { ws = new WebSocket(loc.ws); } catch { return resolve("down"); }
-    const t = setTimeout(() => finish("down"), 5000);   // tak connect dalam 5s = down
-    ws.on("open", () => { clearTimeout(t); finish("up"); });
-    ws.on("error", () => { clearTimeout(t); finish("down"); });
-  });
-}
-async function runHealthChecks() {
-  await Promise.all(LOCATIONS.map(async (l) => { healthById[l.id] = await probe(l); }));
+// ---- koneksi upstream PERSISTEN per lokasi ----
+// Satu koneksi ke WS tiap lokasi (bukan per-klien). Payload terakhir DI-CACHE, jadi
+// klien baru / pindah lokasi langsung dapat data (tak nunggu push berikutnya).
+// Status koneksi (up/down) juga dipakai untuk tanda "offline" di dropdown — real-time.
+const states = {};   // id -> { up, last, clients:Set, ws }
+LOCATIONS.forEach((l) => { states[l.id] = { up: false, last: null, clients: new Set(), ws: null }; });
+function broadcast(st, msg) { for (const c of st.clients) if (c.readyState === WebSocket.OPEN) c.send(msg); }
+const statusMsg = (up) => JSON.stringify({ type: "pulse_status", up });   // beritahu klien: sumber hidup/mati
+
+function connectUpstream(loc) {
+  const st = states[loc.id];
+  let ws;
+  try { ws = new WebSocket(loc.ws); }
+  catch (e) { st.up = false; return setTimeout(() => connectUpstream(loc), 3000); }
+  st.ws = ws;
+  ws.on("open", () => { st.up = true; console.log(`[pulse] upstream ${loc.id} tersambung`); broadcast(st, statusMsg(true)); });
+  ws.on("message", (d) => { st.last = d.toString(); broadcast(st, st.last); });   // cache + fan-out
+  ws.on("close", () => { st.up = false; st.last = null; st.ws = null; broadcast(st, statusMsg(false)); setTimeout(() => connectUpstream(loc), 3000); });
+  ws.on("error", () => { try { ws.terminate(); } catch {} });   // handler 'close' yang reconnect
 }
 
 const app = express();
@@ -87,7 +91,11 @@ app.get("/api/locations", (_req, res) => {
   });
 });
 // status koneksi per lokasi (up/down) untuk tanda di dropdown
-app.get("/api/health", (_req, res) => res.json({ statuses: healthById }));
+app.get("/api/health", (_req, res) => {
+  const statuses = {};
+  for (const id in states) statuses[id] = states[id].up ? "up" : "down";
+  res.json({ statuses });
+});
 app.use(express.static(path.join(__dirname, "public")));
 
 const server = http.createServer(app);
@@ -101,14 +109,13 @@ wss.on("connection", (client, req) => {
   let loc;
   try { loc = findLoc(new URL(req.url, "http://x").searchParams.get("loc")); }
   catch { loc = LOCATIONS[0]; }
-  const upstream = new WebSocket(loc.ws);
-  const closeBoth = () => { try { client.close(); } catch {} try { upstream.close(); } catch {} };
-  upstream.on("message", (d) => { if (client.readyState === WebSocket.OPEN) client.send(d.toString()); });
-  client.on("message", (d) => { if (upstream.readyState === WebSocket.OPEN) upstream.send(d.toString()); });
-  upstream.on("close", closeBoth);
-  client.on("close", closeBoth);
-  upstream.on("error", (e) => { console.warn(`[v2] WS upstream (${loc.id}) error:`, e.message); closeBoth(); });
-  client.on("error", closeBoth);
+  const st = states[loc.id];
+  st.clients.add(client);
+  if (client.readyState === WebSocket.OPEN) client.send(statusMsg(st.up));             // status sumber saat ini
+  if (st.up && st.last && client.readyState === WebSocket.OPEN) client.send(st.last);   // INSTAN: kirim cache terakhir
+  client.on("message", (d) => { if (st.ws && st.ws.readyState === WebSocket.OPEN) st.ws.send(d.toString()); });  // relay perintah → upstream
+  client.on("close", () => st.clients.delete(client));
+  client.on("error", () => st.clients.delete(client));
 });
 
 server.listen(PORT, HOST, () => {
@@ -118,6 +125,5 @@ server.listen(PORT, HOST, () => {
   LOCATIONS.forEach((l) => console.log(`  Lokasi  : ${l.id}  ←  ${l.ws}`));
   console.log(`  WS proxy: /ws?loc=<id>   (default: ${LOCATIONS[0].id})`);
   console.log("========================================");
-  runHealthChecks();                       // cek awal + tiap 20s
-  setInterval(runHealthChecks, 20000).unref();
+  LOCATIONS.forEach((l) => connectUpstream(l));   // buka koneksi persisten + cache payload
 });

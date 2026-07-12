@@ -676,11 +676,13 @@ function openDetail(ip) {
   const d = deviceByIp[ip] || { ip, name: (deviceObjs[ip] && deviceObjs[ip].name) || ip };   // E1: tetap render walau belum ada data live
   renderDetail(d);
   detailPanel.classList.add("open");
+  document.body.classList.add("detail-open");
   const o = deviceObjs[ip];
   if (o) { const wp = new THREE.Vector3(); o.bc.group.getWorldPosition(wp); wp.y += 1.2; focusOn(wp); }
 }
 function closeDetail() {
   detailPanel.classList.remove("open");
+  document.body.classList.remove("detail-open");
   selectedIp = null;
   if (dtTimer) { clearInterval(dtTimer); dtTimer = null; }
   restoreCam();
@@ -751,13 +753,14 @@ function connectWS() {
   ws.onmessage = (e) => {
     let m; try { m = JSON.parse(e.data); } catch { return; }
     if (m.type === "cmd_result") return;
+    if (m.type === "pulse_status") { setConn(m.up, m.up ? "Connected" : "Sumber offline"); return; }   // status sumber (upstream)
     if (m.devices) { m.devices.forEach((d) => (deviceByIp[d.ip] = d)); applyStatus(m.devices); }   // applyStatus → updateSummary
     if (m.timestamp) $("lastUpdate").textContent = `Update ${m.timestamp}`;
   };
 }
-function setConn(ok) {
+function setConn(ok, label) {
   $("connDot").classList.toggle("connected", ok);
-  $("connLabel").textContent = ok ? "Connected" : "Disconnected";
+  $("connLabel").textContent = label || (ok ? "Connected" : "Disconnected");
 }
 
 // ---- util ----
