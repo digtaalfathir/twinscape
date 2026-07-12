@@ -6,7 +6,8 @@
    ===================================================================== */
 
 const protocol = location.protocol === "https:" ? "wss" : "ws";
-const WS_URL = `${protocol}://${location.host}/ws`;
+const _loc = new URLSearchParams(location.search).get("loc");   // tempat mana (multi-lokasi)
+const WS_URL = `${protocol}://${location.host}/ws${_loc ? "?loc=" + encodeURIComponent(_loc) : ""}`;
 let ws;
 
 // ===== state =====

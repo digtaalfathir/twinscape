@@ -551,7 +551,8 @@ function startDtLive(d) {
 // =====================================================================
 function connectWS() {
   const proto = location.protocol === "https:" ? "wss" : "ws";
-  const ws = new WebSocket(`${proto}://${location.host}/ws`);
+  const loc = new URLSearchParams(location.search).get("loc");   // tempat mana (multi-lokasi)
+  const ws = new WebSocket(`${proto}://${location.host}/ws${loc ? "?loc=" + encodeURIComponent(loc) : ""}`);
   ws.onopen = () => setConn(true);
   ws.onclose = () => { setConn(false); setTimeout(connectWS, 3000); };
   ws.onerror = () => ws.close();
