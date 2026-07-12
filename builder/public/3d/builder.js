@@ -881,6 +881,67 @@ $("btnSave").onclick = () => {
   a.href = URL.createObjectURL(blob); a.download = "scene.json"; a.click();
   toast("scene.json diunduh. Taruh di public/ agar dashboard memuatnya.", true);
 };
+
+// ➊ Generate 2D dari 3D — proyeksi top-down scene → layout2d.json (lalu poles di Builder 2D)
+function buildLayout2D() {
+  const s = buildSceneJSON();
+  const floors = s.floors || [], walls = s.walls || [], models = s.models || [], pins = s.pins || [], texts = s.texts || [];
+
+  // frame denah = batas gedung (dari lantai + titik tembok). Model outlier tak dipakai jadi acuan.
+  let minX = Infinity, maxX = -Infinity, minZ = Infinity, maxZ = -Infinity;
+  const grow = (x, z) => { if (x < minX) minX = x; if (x > maxX) maxX = x; if (z < minZ) minZ = z; if (z > maxZ) maxZ = z; };
+  floors.forEach((f) => { grow(f.x - f.w / 2, f.z - f.d / 2); grow(f.x + f.w / 2, f.z + f.d / 2); });
+  walls.forEach((w) => (w.points || []).forEach((p) => grow(p[0], p[1])));
+  if (!isFinite(minX)) { toast("Belum ada lantai/tembok sebagai acuan denah.", false); return null; }
+
+  const spanX = Math.max(1, maxX - minX), spanZ = Math.max(1, maxZ - minZ);
+  const PAD = 40, scale = (1120 - 2 * PAD) / spanX;
+  const VBW = Math.round(spanX * scale + 2 * PAD), VBH = Math.round(spanZ * scale + 2 * PAD);
+  const PX = (x) => +(PAD + (x - minX) * scale).toFixed(1);
+  const PY = (z) => +(PAD + (z - minZ) * scale).toFixed(1);
+  const inFrame = (x, z) => x >= minX - 0.5 && x <= maxX + 0.5 && z >= minZ - 0.5 && z <= maxZ + 0.5;
+
+  // footprint (m) & warna per jenis model — heuristik nama (belum ada metadata di models.json)
+  const foot = (url) => {
+    const u = (url || "").toLowerCase();
+    if (u.includes("gate") || u.includes("rfid")) return { w: 2.2, d: 0.7, color: "rgba(245,158,11,0.6)" };
+    if (u.includes("pallet") || u.includes("rack") || u.includes("crate") || u.includes("stack")) return { w: 1.3, d: 1.3, color: "rgba(56,120,220,0.5)" };
+    if (u.includes("forklift") || u.includes("agv")) return { w: 1.1, d: 2.2, color: "rgba(148,163,184,0.5)" };
+    return { w: 1.4, d: 1.4, color: "rgba(120,140,170,0.5)" };
+  };
+
+  const rooms = [], outWalls = [], outPins = [];
+  outWalls.push({ points: [[PX(minX), PY(minZ)], [PX(maxX), PY(minZ)], [PX(maxX), PY(maxZ)], [PX(minX), PY(maxZ)]], closed: true }); // batas gedung
+  floors.forEach((f) => {                                  // jalur hijau → room hijau
+    if (f.type === "green") rooms.push({ x: PX(f.x - f.w / 2), y: PY(f.z - f.d / 2), w: +(f.w * scale).toFixed(1), h: +(f.d * scale).toFixed(1), color: "rgba(34,197,94,0.55)" });
+  });
+  texts.forEach((t) => {                                   // teks → room berlabel (ukuran default; edit manual)
+    const w = 3.6, d = 3;
+    rooms.push({ x: PX(t.x - w / 2), y: PY(t.z - d / 2), w: +(w * scale).toFixed(1), h: +(d * scale).toFixed(1), label: t.text, color: "rgba(48,49,61,0.5)" });
+  });
+  walls.forEach((w) => {                                   // tembok scene (partisi) → walls
+    const pts = (w.points || []).map((p) => [PX(p[0]), PY(p[1])]);
+    if (pts.length > 1) outWalls.push({ points: pts, closed: !!w.closed });
+  });
+  models.forEach((m) => {                                  // model → kotak footprint (skip outlier)
+    const x = m.position[0], z = m.position[2]; if (!inFrame(x, z)) return;
+    const f = foot(m.url);
+    let w = f.w * (Math.abs(m.scale ? m.scale[0] : 1) || 1), d = f.d * (Math.abs(m.scale ? m.scale[2] : 1) || 1);
+    const ry = Math.abs((((m.rotation && m.rotation[1]) || 0) % Math.PI));
+    if (Math.abs(ry - Math.PI / 2) < 0.4) { const t = w; w = d; d = t; }   // dirotasi ~90° di Y → tukar footprint
+    rooms.push({ x: PX(x - w / 2), y: PY(z - d / 2), w: +(w * scale).toFixed(1), h: +(d * scale).toFixed(1), color: f.color });
+  });
+  pins.forEach((p) => outPins.push({ x: PX(p.x), y: PY(p.z), ip: p.ip || "", label: p.label || "" }));  // pin → pin
+
+  return { version: 1, viewBox: [0, 0, VBW, VBH], rooms, walls: outWalls, pins: outPins };
+}
+$("btnGen2D").onclick = () => {
+  const layout = buildLayout2D(); if (!layout) return;
+  const blob = new Blob([JSON.stringify(layout, null, 2)], { type: "application/json" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob); a.download = "layout2d.json"; a.click();
+  toast(`layout2d.json dibuat (${layout.rooms.length} area, ${layout.pins.length} pin). Buka Builder 2D → Muat untuk poles/rename.`, true);
+};
 $("btnLoad").onclick = () => $("fileScene").click();
 $("fileScene").onchange = (e) => {
   const f = e.target.files[0]; e.target.value = "";

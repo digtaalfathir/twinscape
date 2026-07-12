@@ -47,6 +47,18 @@ Stop: `pkill -f "node builder/server.js"`.
 3. **Simpan** → unduh `scene.json` (3D) atau `layout2d.json` (2D).
 4. Taruh file itu di **`v2/public/`** (dan `.glb` di `v2/public/models/`) agar Viewer menampilkannya.
 
+## 🗺️ Generate 2D dari 3D (top-down otomatis)
+Biar tak menggambar ulang di 2D: bangun sekali di **3D**, lalu klik **"🗺️ Generate 2D"** →
+unduh `layout2d.json` hasil proyeksi top-down:
+- lantai → **acuan gedung**; green floor → **jalur hijau**; tembok → **tembok**;
+- **model → kotak footprint** (rak=biru, gate=amber, forklift=abu, lainnya=abu-biru; ukuran per jenis);
+- **pin → pin**; **teks → room berlabel**.
+- Model yang tertaruh **jauh di luar gedung** (outlier) otomatis dilewati.
+
+Lalu buka **Builder 2D → Muat** `layout2d.json` untuk **poles manual** (geser / rename / hapus),
+Simpan, taruh di `v2/public/`. **Mesin baru** cukup ditaruh di 3D → ikut muncul saat generate lagi.
+> Ukuran footprint masih tebakan per nama file. Untuk akurasi, nanti bisa ditambah `footprint` di `models.json`.
+
 ## Katalog model (`public/models/models.json`)
 ```jsonc
 { "models": [ { "file": "forklift.glb", "name": "Forklift" }, … ] }
