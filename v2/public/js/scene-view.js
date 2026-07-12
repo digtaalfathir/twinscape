@@ -185,12 +185,15 @@ async function loadScene() {
       `atau klik tombol <b>📂</b> (kanan bawah) untuk memuat file dari komputer.`;
   }
 }
-$("btnLoad").onclick = () => $("fileScene").click();
-$("fileScene").onchange = (e) => {
-  const f = e.target.files[0]; e.target.value = "";
-  if (!f) return;
-  f.text().then((t) => { try { buildFromScene(JSON.parse(t), f.name); hideSplash(); } catch { showError("scene.json tidak valid"); } });
-};
+const _bl = $("btnLoad"), _fs = $("fileScene");   // opsional (mungkin sudah dihapus dari UI)
+if (_bl && _fs) {
+  _bl.onclick = () => _fs.click();
+  _fs.onchange = (e) => {
+    const f = e.target.files[0]; e.target.value = "";
+    if (!f) return;
+    f.text().then((t) => { try { buildFromScene(JSON.parse(t)); hideSplash(); } catch { showError("scene.json tidak valid"); } });
+  };
+}
 
 function clearBuilt() {
   scene.remove(built);
@@ -583,8 +586,8 @@ function bindInteraction() {
   window.addEventListener("pointerup", (e) => { if (dn && !moved) click(e); dn = null; });
   canvas.addEventListener("pointerleave", hideTooltip);
 
-  $("resetView").onclick = () => { camera.position.set(28, 24, 32); controls.target.set(0, 1, 0); controls.update(); };
-  $("toggleLabels").onclick = () => { labelsVisible = !labelsVisible; labelEls.forEach((el) => (el.style.display = labelsVisible ? "" : "none")); };
+  const rv = $("resetView"); if (rv) rv.onclick = () => { camera.position.set(28, 24, 32); controls.target.set(0, 1, 0); controls.update(); };
+  const tl = $("toggleLabels"); if (tl) tl.onclick = () => { labelsVisible = !labelsVisible; labelEls.forEach((el) => (el.style.display = labelsVisible ? "" : "none")); };
   document.addEventListener("keydown", (e) => { if (e.key === "Escape") closeDetail(); });
 }
 function pick(e) {

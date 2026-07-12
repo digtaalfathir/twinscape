@@ -14,10 +14,7 @@
   <div class="topbar">
     <div class="brand"><span class="pulse"></span>Stechoq <b>Pulse</b></div>
     <div class="loc-nav" id="locNav"></div>
-    <div class="seg">
-      <button id="t3d">3D</button>
-      <button id="t2d" class="active">2D</button>
-    </div>
+    <span class="tb-spacer"></span>
     <div class="tb-search">
       <input id="searchBox" type="text" placeholder="Cari device / IP…" autocomplete="off">
       <div class="search-results" id="searchResults"></div>
@@ -26,6 +23,14 @@
     <span class="tb-item"><span class="conn-dot" id="connDot"></span><span id="connLabel">Offline</span></span>
     <button class="icon-btn" id="soundToggle" title="Suara alert">🔕</button>
     <button class="icon-btn" id="themeToggle" title="Tema gelap / terang">🌙</button>
+  </div>
+
+  <!-- toggle 3D/2D melayang di kanan-atas (di bawah header) -->
+  <div class="view-toggle">
+    <div class="seg">
+      <button id="t3d">3D</button>
+      <button id="t2d" class="active">2D</button>
+    </div>
   </div>
 
   <!-- ===== 2D STAGE ===== -->

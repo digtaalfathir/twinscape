@@ -199,8 +199,12 @@ body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--t
 /* =====================================================================
    FASE E — cari (E3), filter (E4), mini-trend & ikon severity (E9)
    ===================================================================== */
-/* search di topbar */
-.tb-search{position:relative;flex:1;max-width:360px;min-width:130px}
+/* toggle 3D/2D melayang di kanan-atas (di bawah header) */
+.view-toggle{position:fixed;top:70px;right:16px;z-index:18}
+.view-toggle .seg{background:var(--panel);backdrop-filter:blur(14px);box-shadow:var(--shadow)}
+
+/* search di topbar (lebar tetap, di ujung kanan) */
+.tb-search{position:relative;width:250px;flex:none}
 .tb-search input{width:100%;background:var(--hover);border:1px solid var(--border);border-radius:10px;color:var(--text-bright);
   font:600 13px Inter,sans-serif;padding:8px 12px 8px 33px;outline:none;transition:border-color .15s;
   background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%238b9ab4' stroke-width='2.4' stroke-linecap='round'><circle cx='11' cy='11' r='7'/><line x1='21' y1='21' x2='16.65' y2='16.65'/></svg>");
