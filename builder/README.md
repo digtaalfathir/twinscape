@@ -24,6 +24,23 @@ npx serve builder/public
 ```
 Tidak perlu `npm start` / `npm run v2` — builder mandiri.
 
+### Akses dari laptop lain (LAN)
+Builder otomatis dengar di **semua interface**, jadi bisa dibuka dari komputer lain tanpa PM2:
+```bash
+# di server (biar tetap jalan walau terminal/SSH ditutup):
+nohup node builder/server.js > builder/builder.log 2>&1 &
+# ganti port bila perlu: BUILDER_PORT=10103 nohup node builder/server.js ...
+# buka firewall port:
+sudo ufw allow 10103/tcp
+# cek IP server:
+hostname -I
+```
+Buka di browser laptop lain: **`http://<IP-server>:10103`**.
+Stop: `pkill -f "node builder/server.js"`.
+
+> **Internal saja** — builder TANPA login. Cukup di jaringan lokal; **jangan** diarahkan ke domain/publik.
+> Batasi ke localhost bila perlu: `BUILDER_HOST=127.0.0.1 node builder/server.js`.
+
 ## Alur
 1. Pilih **3D** atau **2D** di bar atas.
 2. Gambar tembok / lantai / pintu / **pin device (isi IP manual)** / teks / model.
