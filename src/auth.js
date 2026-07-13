@@ -62,6 +62,21 @@ function readCookie(req, name) {
 }
 function userFromReq(req) { return verifyToken(readCookie(req, COOKIE)); }
 
+// Untuk client non-browser (mis. relay WS server-to-server): izinkan bila cookie sesi valid,
+// ATAU membawa token yang cocok DASH_WS_TOKEN (via ?token=, header x-ws-token, atau Authorization: Bearer).
+const WS_TOKEN = process.env.DASH_WS_TOKEN || "";
+function wsAuthOK(req) {
+  if (userFromReq(req)) return true;
+  if (!WS_TOKEN) return false;
+  let t = null;
+  try { t = new URL(req.url, "http://x").searchParams.get("token"); } catch { /* abaikan */ }
+  if (!t) t = req.headers["x-ws-token"] || null;
+  if (!t) { const a = req.headers["authorization"] || ""; if (a.startsWith("Bearer ")) t = a.slice(7); }
+  if (!t) return false;
+  const a = Buffer.from(String(t)), b = Buffer.from(WS_TOKEN);
+  return a.length === b.length && crypto.timingSafeEqual(a, b);
+}
+
 const PUBLIC = new Set(["/login", "/api/login", "/api/logout", "/health"]);
 function middleware(req, res, next) {
   if (PUBLIC.has(req.path)) return next();
@@ -72,4 +87,4 @@ function middleware(req, res, next) {
   return res.status(401).json({ error: "unauthorized" });
 }
 
-module.exports = { COOKIE, MAXAGE, USERS_FILE, loadUsers, hashPassword, verifyPassword, makeToken, userFromReq, middleware };
+module.exports = { COOKIE, MAXAGE, USERS_FILE, loadUsers, hashPassword, verifyPassword, makeToken, userFromReq, wsAuthOK, middleware };

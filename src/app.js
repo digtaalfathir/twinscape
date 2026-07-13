@@ -74,8 +74,7 @@ app.get("*", (req, res) => {
 
 // ================= WEBSOCKET =================
 const wsPath = config.wsPath || "/ws";
-websocketServer.init(server, wsPath, monitor, (info, cb) =>
-  auth.userFromReq(info.req) ? cb(true) : cb(false, 401, "Unauthorized"));
+websocketServer.init(server, wsPath, monitor, (req) => auth.wsAuthOK(req));
 
 // ================= START MONITORING ENGINE =================
 monitor.start();

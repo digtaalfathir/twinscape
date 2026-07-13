@@ -12,17 +12,17 @@ let wss = null;
 /**
  * Initialize WebSocket server attached to HTTP server with path
  */
-function init(server, wsPath, monitor, verifyClient) {
-  const opts = { server, path: wsPath };
-  if (verifyClient) opts.verifyClient = verifyClient;   // auth: tolak WS tanpa sesi login
-  wss = new WebSocket.Server(opts);
+function init(server, wsPath, monitor, authFn) {
+  // Koneksi WS TERBUKA (relay/consumer bisa listen tanpa login). Yang dikunci = perintah (mutasi).
+  wss = new WebSocket.Server({ server, path: wsPath });
 
   // Inject broadcast function into monitor
   monitor.setBroadcast(broadcast);
 
   wss.on("connection", (ws, req) => {
     const clientIp = req.headers["x-forwarded-for"] || req.socket.remoteAddress;
-    logger.info(`WebSocket client connected from ${clientIp}`);
+    ws._authed = authFn ? !!authFn(req) : true;   // hanya sesi login / token yang boleh kirim command
+    logger.info(`WebSocket client connected from ${clientIp}${ws._authed ? "" : " (read-only)"}`);
 
     // Send initial snapshot
     const snapshotPayload = {
@@ -37,6 +37,10 @@ function init(server, wsPath, monitor, verifyClient) {
       try {
         const msg = JSON.parse(raw);
         if (msg.type === "command") {
+          if (!ws._authed) {   // baca boleh, tapi ubah data wajib login
+            try { ws.send(JSON.stringify({ type: "cmd_result", ok: false, message: "Perlu login untuk menjalankan perintah." })); } catch (e2) {}
+            return;
+          }
           monitor.handleDeviceCommand(msg, ws);
         }
       } catch (e) {
