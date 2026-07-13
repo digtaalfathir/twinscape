@@ -1,0 +1,5 @@
+{
+  "_info": "Daftar model .glb untuk Katalog di Scene Builder. Tambah entri di 'models'. 'file' relatif ke folder ini (public/models/). 'thumb' opsional (path gambar).",
+  "models": [
+  ]
+}
