@@ -9,14 +9,14 @@
       "layout2d": "/layout2djmp.json"
     },
     {
-      "id": "example",
-      "name": "Example Location",
+      "id": "sugity",
+      "name": "Sugity",
       "ws": "ws://localhost:10011/ws",
-      "scene3d": "/scene.example.json",
-      "layout2d": "/layout2d.example.json",
+      "scene3d": "/scenesugityf2.json",
+      "layout2d": "/layout2dsugityf2.json",
       "floors":[
-        {"id":"l1","name":"Lantai 1","scene3d":"/scene.example.json","layout2d":"/layout2d.example.json"},
-        {"id":"l2","name":"Lantai 2","scene3d":"/scene.example.json","layout2d":"/layout2d.example.json"}
+        {"id":"f2","name":"Factory 2","scene3d":"/scenesugityf2.json","layout2d":"/layout2dsugityf2.json"},
+        {"id":"f3","name":"Factory 3","scene3d":"/scene.example.json","layout2d":"/layout2d.example.json"}
       ]
     }
   ]
