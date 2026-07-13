@@ -141,13 +141,13 @@ function initThree() {
   renderer.localClippingEnabled = true;   // aktifkan clip per-material (motong model nembus lantai)
   // A3: shadow OFF dari awal (flat & ringan) — tanpa toggle.
 
-  if (!lite) {   // #4: env-map (refleksi) mahal → dilewati di mode ringan
-    try {
-      const pmrem = new THREE.PMREMGenerator(renderer);
-      scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
-      pmrem.dispose();
-    } catch (e) { console.warn("env map dilewati:", e); }
-  }
+  // env-map = pencahayaan lembut untuk material PBR. Biaya cuma SEKALI (bikin cubemap),
+  // per-frame murah → tetap dipakai di mode ringan supaya scene tak jadi gelap. #4
+  try {
+    const pmrem = new THREE.PMREMGenerator(renderer);
+    scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
+    pmrem.dispose();
+  } catch (e) { console.warn("env map dilewati:", e); }
 
   labelRenderer = new CSS2DRenderer();
   labelRenderer.setSize(w, h);
