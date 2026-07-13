@@ -114,19 +114,15 @@ node v2/adduser.js madani rahasia123 # atau non-interaktif (password sbagai argu
 
 ---
 
-## 5. Sambungkan ke domain (nginx + HTTPS)
+## 5. Sambungkan ke domain (Cloudflare Tunnel)
 
-```bash
-sudo cp v2/deploy/nginx-pulse.conf.example /etc/nginx/sites-available/pulse.conf
-sudo nano /etc/nginx/sites-available/pulse.conf          # ganti server_name → domainmu
-sudo ln -s /etc/nginx/sites-available/pulse.conf /etc/nginx/sites-enabled/
-sudo nginx -t && sudo systemctl reload nginx
+Server ini di balik VPN/NAT (tanpa IP publik), jadi domain dipublikasikan lewat **Cloudflare Tunnel**
+(koneksi keluar; HTTPS + WebSocket otomatis; tak perlu buka port). Panduan lengkap:
+**[`../docs/DEPLOY-cloudflare.md`](../docs/DEPLOY-cloudflare.md)**.
 
-# HTTPS otomatis (Let's Encrypt)
-sudo certbot --nginx -d pulse.contoh.com
-```
-Config sudah menyertakan **upgrade header untuk `/ws`** (wajib, kalau tidak status live gagal connect).
-Setelah HTTPS, browser pakai `wss://` otomatis (viewer mengikuti protokol halaman).
+Ringkas: install `cloudflared` → tes cepat `cloudflared tunnel --url http://localhost:10102`
+(dapat URL publik instan) → untuk domain tetap, buat tunnel di dashboard Cloudflare +
+Public Hostname `iot-node.sugity.stechoq-j.com → localhost:10102`.
 
 ---
 
