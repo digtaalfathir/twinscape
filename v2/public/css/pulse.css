@@ -47,6 +47,7 @@ body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--t
 .tb-item{display:flex;align-items:center;gap:7px;font-size:12.5px;font-weight:600;color:var(--text-dim)}
 .conn-dot{width:8px;height:8px;border-radius:50%;background:var(--down);transition:background .3s}
 .conn-dot.connected{background:var(--up);box-shadow:0 0 8px var(--up)}
+#connLabel{display:inline-block;min-width:98px}   /* stabil: teks Connected/Disconnected/Sumber offline tak menggeser layout */
 .icon-btn{width:36px;height:36px;border:1px solid var(--border);border-radius:10px;background:transparent;color:var(--text);
   font-size:15px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .15s}
 .icon-btn:hover{background:var(--hover);border-color:var(--accent);transform:translateY(-1px)}

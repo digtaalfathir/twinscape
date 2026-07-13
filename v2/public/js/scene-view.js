@@ -38,6 +38,8 @@ const labelEls = [];        // device labels (toggle)
 let selectedIp = null, dtTimer = null, labelsVisible = true, filterMode = "all", alertBaseline = false;
 let zones3d = [];           // E2/E7 — zona = lantai (bounds XZ + mesh utk warna)
 const ZONE_TINT = false;    // E7 pewarnaan lantai saat DOWN — dimatikan sementara (set true utk aktifkan)
+let glLost = false, renderPaused = false;              // stabilitas GPU (context-lost / tab tersembunyi)
+let modelsPending = 0, sceneReadyFired = false, readyTimer = null;   // #1: splash ditahan sampai model selesai
 let camAnim = null, savedCam = null, lastT = 0;   // klik→zoom ke titik, tutup→balik
 const modelCache = {};      // A2: url -> Promise<gltf.scene> (load-once, lalu clone)
 
@@ -145,10 +147,27 @@ function initThree() {
   built = new THREE.Group();
   scene.add(built);
   window.addEventListener("resize", onResize);
+
+  // stabilitas GPU: bebaskan context saat pindah/refresh halaman (cegah context menumpuk → "WebGL not
+  // supported"), pause render saat tab tersembunyi, dan tangani context-lost tanpa crash.
+  canvas.addEventListener("webglcontextlost", (e) => { e.preventDefault(); glLost = true; onContextLost(); }, false);
+  canvas.addEventListener("webglcontextrestored", () => { glLost = false; }, false);
+  window.addEventListener("pagehide", freeGL);
+  document.addEventListener("visibilitychange", () => { renderPaused = document.hidden; });
 }
+function freeGL() { try { renderer.forceContextLoss(); } catch (e) {} try { renderer.dispose(); } catch (e) {} }
+function onContextLost() {
+  splash.classList.remove("hidden"); splash.classList.add("error");
+  splashMsg.innerHTML = "Tampilan 3D terhenti sesaat (GPU sibuk).<br>" +
+    "<a href=\"#\" onclick=\"location.reload();return false\" style=\"color:var(--accent);text-decoration:underline\">Muat ulang</a>";
+}
+// #1: sembunyikan splash hanya setelah SEMUA model 3D selesai load (atau 12s sbg pengaman)
+function markModelDone() { if (modelsPending > 0) modelsPending--; if (modelsPending <= 0) fireSceneReady(); }
+function fireSceneReady() { if (sceneReadyFired) return; sceneReadyFired = true; clearTimeout(readyTimer); hideSplash(); }
 
 function animate() {
   requestAnimationFrame(animate);
+  if (glLost || renderPaused) return;   // jangan render saat context hilang / tab tersembunyi
   const t = clock ? clock.getElapsedTime() : 0;
   const dt = Math.min(0.1, t - lastT); lastT = t;
   for (const ip in deviceObjs) {
@@ -192,8 +211,7 @@ async function loadScene() {
   const tryLoad = async (u) => {
     const res = await fetch(u, { cache: "no-store" });
     const data = JSON.parse(await res.text());   // throws if it's the SPA-fallback HTML
-    buildFromScene(data);
-    hideSplash();
+    buildFromScene(data);   // splash ditutup oleh fireSceneReady() setelah SEMUA model 3D selesai load
   };
   try {
     await tryLoad(url);
@@ -266,6 +284,10 @@ function buildFromScene(s) {
   modelClip.constant = floorTop === null ? 1e6 : -floorTop;   // ada lantai → potong model di garis lantai
   (s.texts || []).forEach((d) => built.add(makeTextSprite(d)));
   (s.pins || []).forEach((d) => addPinDevice(d));
+  sceneReadyFired = false;
+  modelsPending = (s.models || []).length;
+  clearTimeout(readyTimer); readyTimer = setTimeout(fireSceneReady, 12000);   // pengaman bila ada model gagal/hang
+  if (splashMsg && modelsPending) splashMsg.textContent = "Menyiapkan tampilan 3D…";
   (s.models || []).forEach((d) => addModel(d));
 
   if (s.camera && s.camera.position && s.camera.target) {
@@ -278,6 +300,7 @@ function buildFromScene(s) {
   // re-apply any live status we already have
   if (Object.keys(deviceByIp).length) applyStatus(Object.values(deviceByIp));
   updateSummary();   // tampilkan total pin scene walau data live belum masuk
+  if (modelsPending === 0) fireSceneReady();   // tak ada model → langsung siap (splash ditutup)
 }
 
 function applyLighting(L) {
@@ -468,7 +491,8 @@ function addModel(d) {
       if (Object.keys(deviceByIp).length) applyStatus(Object.values(deviceByIp));
       updateSummary();   // model .glb load async → refresh hitungan saat beacon-nya siap
     }
-  }).catch(() => console.warn("model tak ditemukan:", d.url));
+    markModelDone();   // #1
+  }).catch(() => { console.warn("model tak ditemukan:", d.url); markModelDone(); });
 }
 
 // =====================================================================

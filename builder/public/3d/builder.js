@@ -15,6 +15,7 @@ import { RoomEnvironment } from "three/addons/environments/RoomEnvironment.js";
 // ---- DOM ----
 const view = document.getElementById("view");
 const canvas = document.getElementById("c3d");
+let glLost = false, renderPaused = false;   // stabilitas GPU (context-lost / tab tersembunyi)
 const tipEl = document.getElementById("tip");
 const $ = (id) => document.getElementById(id);
 
@@ -144,12 +145,18 @@ function init() {
   updatePlot();
   setMode("select");
   window.addEventListener("resize", onResize);
+  // stabilitas GPU: bebaskan context saat tinggalkan halaman, pause saat tab tersembunyi, tangani context-lost
+  canvas.addEventListener("webglcontextlost", (e) => { e.preventDefault(); glLost = true; try { toast("Tampilan 3D terputus (GPU sibuk). Muat ulang halaman.", false); } catch (x) {} }, false);
+  canvas.addEventListener("webglcontextrestored", () => { glLost = false; }, false);
+  window.addEventListener("pagehide", () => { try { renderer.forceContextLoss(); renderer.dispose(); } catch (x) {} });
+  document.addEventListener("visibilitychange", () => { renderPaused = document.hidden; });
   animate();
   loadCatalog();
 }
 
 function animate() {
   requestAnimationFrame(animate);
+  if (glLost || renderPaused) return;   // jangan render saat context hilang / tab tersembunyi
   controls.update();
   renderer.render(scene, camera);
 }
