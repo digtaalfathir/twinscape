@@ -111,21 +111,101 @@
       ]
     },
     {
-      "url": "/models/panel_iot.glb",
-      "name": "panel_iot",
+      "url": "/models/injection_machine.glb",
+      "name": "injection_machine",
       "deviceIp": "",
       "position": [
-        -2.5,
-        0.5,
-        2.5
+        -7,
+        0,
+        -3.5
       ],
       "rotation": [
-        -1.571,
+        3.142,
         0,
-        1.571
+        3.142
       ],
       "scale": [
+        1.939,
         1,
+        1
+      ]
+    },
+    {
+      "url": "/models/injection_machine.glb",
+      "name": "injection_machine",
+      "deviceIp": "",
+      "position": [
+        -7,
+        0,
+        -6.5
+      ],
+      "rotation": [
+        3.142,
+        0,
+        3.142
+      ],
+      "scale": [
+        1.939,
+        1,
+        1
+      ]
+    },
+    {
+      "url": "/models/injection_machine.glb",
+      "name": "injection_machine",
+      "deviceIp": "",
+      "position": [
+        4.5,
+        0,
+        -5.5
+      ],
+      "rotation": [
+        0,
+        1.571,
+        0
+      ],
+      "scale": [
+        1.497,
+        1,
+        1
+      ]
+    },
+    {
+      "url": "/models/injection_machine.glb",
+      "name": "injection_machine",
+      "deviceIp": "",
+      "position": [
+        7.5,
+        0,
+        -5.5
+      ],
+      "rotation": [
+        0,
+        1.571,
+        0
+      ],
+      "scale": [
+        1.497,
+        1,
+        1
+      ]
+    },
+    {
+      "url": "/models/injection_machine.glb",
+      "name": "injection_machine",
+      "deviceIp": "",
+      "position": [
+        10.5,
+        0,
+        -5.5
+      ],
+      "rotation": [
+        0,
+        1.571,
+        0
+      ],
+      "scale": [
+        1.497,
         1,
         1
       ]
@@ -148,6 +228,26 @@
         0.599,
         0.639,
         1.018
+      ]
+    },
+    {
+      "url": "/models/panel_iot.glb",
+      "name": "panel_iot",
+      "deviceIp": "",
+      "position": [
+        -2.5,
+        0.5,
+        2.5
+      ],
+      "rotation": [
+        -1.571,
+        0,
+        1.571
+      ],
+      "scale": [
+        1,
+        1,
+        1
       ]
     },
     {
@@ -611,106 +711,6 @@
       ]
     },
     {
-      "url": "/models/injection_machine.glb",
-      "name": "injection_machine",
-      "deviceIp": "",
-      "position": [
-        -7,
-        0,
-        -3.5
-      ],
-      "rotation": [
-        3.142,
-        0,
-        3.142
-      ],
-      "scale": [
-        1.939,
-        1,
-        1
-      ]
-    },
-    {
-      "url": "/models/injection_machine.glb",
-      "name": "injection_machine",
-      "deviceIp": "",
-      "position": [
-        -7,
-        0,
-        -6.5
-      ],
-      "rotation": [
-        3.142,
-        0,
-        3.142
-      ],
-      "scale": [
-        1.939,
-        1,
-        1
-      ]
-    },
-    {
-      "url": "/models/injection_machine.glb",
-      "name": "injection_machine",
-      "deviceIp": "",
-      "position": [
-        4.5,
-        0,
-        -5.5
-      ],
-      "rotation": [
-        0,
-        1.571,
-        0
-      ],
-      "scale": [
-        1.497,
-        1,
-        1
-      ]
-    },
-    {
-      "url": "/models/injection_machine.glb",
-      "name": "injection_machine",
-      "deviceIp": "",
-      "position": [
-        7.5,
-        0,
-        -5.5
-      ],
-      "rotation": [
-        0,
-        1.571,
-        0
-      ],
-      "scale": [
-        1.497,
-        1,
-        1
-      ]
-    },
-    {
-      "url": "/models/injection_machine.glb",
-      "name": "injection_machine",
-      "deviceIp": "",
-      "position": [
-        10.5,
-        0,
-        -5.5
-      ],
-      "rotation": [
-        0,
-        1.571,
-        0
-      ],
-      "scale": [
-        1.497,
-        1,
-        1
-      ]
-    },
-    {
       "url": "/models/bumper_rack.glb",
       "name": "bumper_rack",
       "deviceIp": "",
@@ -871,6 +871,14 @@
       "y": 1.6,
       "z": 2.5,
       "text": "Oasis",
+      "size": 1,
+      "color": "#e2e8f0"
+    },
+    {
+      "x": 0,
+      "y": 4,
+      "z": 0.5,
+      "text": "Factory 2",
       "size": 1,
       "color": "#e2e8f0"
     }
