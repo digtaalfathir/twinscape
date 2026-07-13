@@ -12,11 +12,10 @@ let wss = null;
 /**
  * Initialize WebSocket server attached to HTTP server with path
  */
-function init(server, wsPath, monitor) {
-  wss = new WebSocket.Server({
-    server,
-    path: wsPath,
-  });
+function init(server, wsPath, monitor, verifyClient) {
+  const opts = { server, path: wsPath };
+  if (verifyClient) opts.verifyClient = verifyClient;   // auth: tolak WS tanpa sesi login
+  wss = new WebSocket.Server(opts);
 
   // Inject broadcast function into monitor
   monitor.setBroadcast(broadcast);

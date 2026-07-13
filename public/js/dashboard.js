@@ -15,8 +15,11 @@ let filterStatus = 'ALL';
 let filterSeverity = 'ALL';
 let filterSearch = '';
 let filterSortBy = 'name';
+let filterFactory = 'ALL';
 
 const SEV_ORDER = { CRITICAL: 0, HIGH: 1, MEDIUM: 2, LOW: 3 };
+// "factory" = field location tiap device (mis. "Cibitung - F4")
+const factoryOf = (d) => (d.location && d.location.trim()) ? d.location.trim() : 'Tanpa Lokasi';
 
 function getFilteredDevices() {
   let list = devicesData.slice();
@@ -29,6 +32,9 @@ function getFilteredDevices() {
   }
   if (filterSeverity !== 'ALL') {
     list = list.filter(d => d.severity === filterSeverity);
+  }
+  if (filterFactory !== 'ALL') {
+    list = list.filter(d => factoryOf(d) === filterFactory);
   }
   list.sort((a, b) => {
     switch (filterSortBy) {
@@ -92,6 +98,7 @@ function render() {
     scoreEl.style.color = healthScore >= 95 ? 'var(--up)' : healthScore >= 80 ? 'var(--high)' : 'var(--down)';
   }
 
+  updateFactoryOptions();
   const filtered = getFilteredDevices();
   const countEl = document.getElementById('filterCount');
   if (filtered.length < total) {
@@ -100,17 +107,41 @@ function render() {
     countEl.textContent = '';
   }
 
-  grid.innerHTML = filtered.map(d => {
-    const isDown = d.status === 'DOWN';
-    const latStr = d.latency !== null && d.latency !== undefined ? `${d.latency} ms` : '—';
-    const avgStr = d.avgLatency !== null && d.avgLatency !== undefined ? `${d.avgLatency} ms` : '—';
-    const peakStr = d.maxLatency !== null && d.maxLatency !== undefined ? `${d.maxLatency} ms` : '—';
-    const avail = d.uptimeToday ?? 100;
-    const downSec = d.downtimeTodaySec ?? 0;
-    const hist = (d.history || []).slice(-5).reverse();
-    const eName = escAttr(d.name);
-
+  // kelompokkan per factory (location); tiap grup punya header + grid kartu sendiri
+  const groups = {};
+  filtered.forEach(d => { const f = factoryOf(d); (groups[f] = groups[f] || []).push(d); });
+  const order = Object.keys(groups).sort((a, b) => a.localeCompare(b));
+  grid.innerHTML = order.length ? order.map(f => {
+    const list = groups[f];
+    const up = list.filter(d => d.status === 'UP').length;
+    const down = list.filter(d => d.status === 'DOWN').length;
     return `
+    <section class="factory-group">
+      <div class="factory-head">
+        <span class="fh-name">${esc(f)}</span>
+        <span class="fh-count">${list.length} device</span>
+        <span class="fh-stat"><span class="fh-dot" style="background:var(--up)"></span>${up}</span>
+        <span class="fh-stat"><span class="fh-dot" style="background:var(--down)"></span>${down}</span>
+        <span class="fh-line"></span>
+      </div>
+      <div class="grid">${list.map(cardHTML).join('')}</div>
+    </section>`;
+  }).join('') : `<div class="empty-msg">Tak ada device yang cocok filter/pencarian.</div>`;
+
+  startDowntimeCounters();
+}
+
+function cardHTML(d) {
+  const isDown = d.status === 'DOWN';
+  const latStr = d.latency !== null && d.latency !== undefined ? `${d.latency} ms` : '—';
+  const avgStr = d.avgLatency !== null && d.avgLatency !== undefined ? `${d.avgLatency} ms` : '—';
+  const peakStr = d.maxLatency !== null && d.maxLatency !== undefined ? `${d.maxLatency} ms` : '—';
+  const avail = d.uptimeToday ?? 100;
+  const downSec = d.downtimeTodaySec ?? 0;
+  const hist = (d.history || []).slice(-5).reverse();
+  const eName = escAttr(d.name);
+
+  return `
     <div class="card status-${d.status.toLowerCase()}" data-name="${eName}" onclick="openDetail('${eName}')">
       <div class="card-top">
         <div><div class="dev-name">${esc(d.name)}</div><div class="dev-ip">${d.ip}</div></div>
@@ -143,13 +174,25 @@ function render() {
         </div>
       </div>` : ''}
       <div class="card-actions">
-        <button class="btn-edit" onclick="event.stopPropagation();openEdit('${eName}')">✏ Edit</button>
-        <button class="btn-del" onclick="event.stopPropagation();confirmDelete('${eName}')">✕ Delete</button>
+        <button class="btn-edit" onclick="event.stopPropagation();openEdit('${eName}')">Edit</button>
+        <button class="btn-del" onclick="event.stopPropagation();confirmDelete('${eName}')">Delete</button>
       </div>
     </div>`;
-  }).join('');
+}
 
-  startDowntimeCounters();
+// isi dropdown factory dari daftar location device (pertahankan pilihan)
+function updateFactoryOptions() {
+  const sel = document.getElementById('filterFactory');
+  if (!sel) return;
+  const factories = [...new Set(devicesData.map(factoryOf))].sort((a, b) => a.localeCompare(b));
+  const sig = factories.join('|');
+  if (sel._sig !== sig) {
+    sel.innerHTML = '<option value="ALL">Semua Factory</option>' +
+      factories.map(f => `<option value="${esc(f)}">${esc(f)}</option>`).join('');
+    sel._sig = sig;
+  }
+  if (filterFactory !== 'ALL' && !factories.includes(filterFactory)) filterFactory = 'ALL';
+  sel.value = filterFactory;
 }
 
 function esc(s) { const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
@@ -276,6 +319,11 @@ document.getElementById('filterSort').addEventListener('change', (e) => {
   render();
 });
 
+document.getElementById('filterFactory').addEventListener('change', (e) => {
+  filterFactory = e.target.value;
+  render();
+});
+
 // ===== Keyboard shortcut =====
 document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape') { closeModal(); closeDetail(); }
@@ -304,7 +352,7 @@ function openDetail(name) {
       </div>
       <button class="detail-close" onclick="closeDetail()">✕</button>
     </div>
-    <div class="detail-section-title">⚡ Network Quality</div>
+    <div class="detail-section-title">Network Quality</div>
     <div class="detail-grid">
       <div class="detail-item"><div class="detail-label">Status</div><div class="detail-val ${isDown ? 'down' : 'up'}">${d.status}</div></div>
       <div class="detail-item"><div class="detail-label">Availability</div><div class="detail-val" style="color:${avail >= 99 ? 'var(--up)' : 'var(--down)'}">${avail}%</div></div>
@@ -313,14 +361,14 @@ function openDetail(name) {
       <div class="detail-item"><div class="detail-label">Peak Latency</div><div class="detail-val" style="color:#f59e0b">${peakStr}</div></div>
       <div class="detail-item"><div class="detail-label">Downtime Today</div><div class="detail-val">${fmtSec(d.downtimeTodaySec ?? 0)}</div></div>
     </div>
-    <div class="detail-section-title">📝 Device Information</div>
+    <div class="detail-section-title">Device Information</div>
     <div class="detail-grid">
       <div class="detail-item"><div class="detail-label">Owner</div><input class="detail-meta-input" id="detOwner" value="${escHtml(d.owner || '')}" placeholder="e.g. Production"></div>
       <div class="detail-item"><div class="detail-label">Location</div><input class="detail-meta-input" id="detLocation" value="${escHtml(d.location || '')}" placeholder="e.g. Factory 4"></div>
       <div class="detail-item"><div class="detail-label">Vendor</div><input class="detail-meta-input" id="detVendor" value="${escHtml(d.vendor || '')}" placeholder="e.g. ABC Automation"></div>
       <div class="detail-item full"><div class="detail-label">Notes</div><textarea class="detail-notes" id="detNotes" placeholder="Catatan tentang device ini...">${escHtml(d.notes || '')}</textarea></div>
     </div>
-    <button class="detail-save" onclick="saveNotes('${escAttr(d.name)}')">💾 Save Notes</button>
+    <button class="detail-save" onclick="saveNotes('${escAttr(d.name)}')">Save Notes</button>
   `;
   detailOverlay.classList.add('open');
 }
@@ -342,6 +390,25 @@ function saveNotes(name) {
     notes: document.getElementById('detNotes').value.trim(),
   });
 }
+
+// ===== Theme toggle (default light) =====
+(function () {
+  const html = document.documentElement, btn = document.getElementById('themeToggle');
+  function apply(t) { html.setAttribute('data-theme', t); localStorage.setItem('dash-theme', t); if (btn) btn.textContent = t === 'dark' ? '☀️' : '🌙'; }
+  if (btn) {
+    btn.onclick = () => apply(html.getAttribute('data-theme') === 'dark' ? 'light' : 'dark');
+    btn.textContent = html.getAttribute('data-theme') === 'dark' ? '☀️' : '🌙';
+  }
+})();
+
+// ===== Logout =====
+(function () {
+  const btn = document.getElementById('logoutBtn');
+  if (btn) btn.onclick = async () => {
+    try { await fetch('/api/logout', { method: 'POST' }); } catch (e) {}
+    location.href = '/login';
+  };
+})();
 
 // ===== Start =====
 connect();

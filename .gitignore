@@ -15,4 +15,8 @@ logs/
 v2/users.json
 v2/.pulse-secret
 
+# v1 dashboard — akun & rahasia sesi (JANGAN di-commit)
+data/users.json
+data/.dashboard-secret
+
 # Catatan: data/devices.json TETAP dilacak (daftar device / konfigurasi).

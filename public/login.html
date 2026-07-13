@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="id" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Masuk — Device Monitoring</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <script>document.documentElement.setAttribute("data-theme", localStorage.getItem("dash-theme") || "light");</script>
+  <style>
+    :root,:root[data-theme="light"]{--bg:#eef1f4;--panel:#fff;--border:rgba(15,23,42,.1);--input:#f1f4f8;
+      --text:#3f4a5a;--dim:#6b7688;--bright:#0f172a;--accent:#1c8a4b;--accent-2:#ef7d1a;--down:#dc2626}
+    :root[data-theme="dark"]{--bg:#0d1411;--panel:#141b18;--border:rgba(255,255,255,.09);--input:rgba(255,255,255,.06);
+      --text:#c3ccd8;--dim:#8592a3;--bright:#f1f5f9;--accent:#2fb567;--accent-2:#fb923c;--down:#ef4444}
+    *{margin:0;box-sizing:border-box}
+    body{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px;
+      font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--text);
+      background-image:radial-gradient(120% 80% at 50% -10%,rgba(28,138,75,.10) 0%,transparent 55%)}
+    .card{width:100%;max-width:360px;background:var(--panel);border:1px solid var(--border);border-radius:18px;
+      padding:32px 28px;box-shadow:0 18px 50px rgba(15,23,42,.15)}
+    .brand{display:flex;align-items:center;gap:11px;justify-content:center;margin-bottom:6px}
+    .brand .mark{width:34px;height:34px;border-radius:9px;background:linear-gradient(135deg,var(--accent),var(--accent-2));
+      display:flex;align-items:center;justify-content:center;color:#fff;font-weight:800;font-size:17px;box-shadow:0 3px 10px rgba(28,138,75,.35)}
+    .brand .w{font-size:19px;font-weight:800;letter-spacing:-.01em;color:var(--bright)}
+    .sub{text-align:center;font-size:13px;color:var(--dim);margin-bottom:24px}
+    label{display:block;font-size:12px;font-weight:600;color:var(--dim);margin:0 0 6px 2px}
+    .field{margin-bottom:15px}
+    input{width:100%;background:var(--input);border:1px solid var(--border);border-radius:10px;color:var(--bright);
+      font:500 14px inherit;padding:11px 13px;outline:none;transition:border-color .15s}
+    input:focus{border-color:var(--accent)}
+    button{width:100%;margin-top:6px;padding:12px;border:none;border-radius:10px;background:var(--accent);color:#fff;
+      font:700 14px inherit;cursor:pointer;transition:filter .15s}
+    button:hover{filter:brightness(1.06)}
+    button:disabled{opacity:.6;cursor:default}
+    .err{min-height:18px;margin-top:12px;text-align:center;font-size:12.5px;font-weight:600;color:var(--down)}
+  </style>
+</head>
+<body>
+  <form class="card" id="loginForm" autocomplete="on">
+    <div class="brand">
+      <!-- <span class="mark">M</span> -->
+      <span class="w">Device Monitoring</span>
+    </div>
+    <div class="sub">Masuk untuk mengakses dashboard</div>
+    <div class="field">
+      <label for="u">Username</label>
+      <input id="u" name="username" type="text" autocomplete="username" required autofocus>
+    </div>
+    <div class="field">
+      <label for="p">Password</label>
+      <input id="p" name="password" type="password" autocomplete="current-password" required>
+    </div>
+    <button id="btn" type="submit">Masuk</button>
+    <div class="err" id="err"></div>
+  </form>
+  <script>
+    const form = document.getElementById("loginForm"), btn = document.getElementById("btn"), err = document.getElementById("err");
+    const next = new URLSearchParams(location.search).get("next") || "/";
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      err.textContent = ""; btn.disabled = true; btn.textContent = "Memeriksa…";
+      try {
+        const r = await fetch("/api/login", {
+          method: "POST", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ username: document.getElementById("u").value, password: document.getElementById("p").value }),
+        });
+        if (r.ok) { location.href = next; return; }
+        const d = await r.json().catch(() => ({}));
+        err.textContent = d.error || "Gagal masuk.";
+      } catch (_) { err.textContent = "Tak bisa menghubungi server."; }
+      btn.disabled = false; btn.textContent = "Masuk";
+    });
+  </script>
+</body>
+</html>

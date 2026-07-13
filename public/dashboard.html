@@ -7,18 +7,27 @@
   <meta name="description" content="Real-time hardware device monitoring dashboard — track network status, latency, and availability.">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/css/dashboard.css">
+  <script>document.documentElement.setAttribute('data-theme', localStorage.getItem('dash-theme') || 'light');</script>
 </head>
 <body>
 
   <div class="header">
     <div>
-      <h1>⚡ Device Monitoring</h1>
+      <h1>Device Monitoring</h1>
       <div class="meta" id="lastUpdate">Connecting...</div>
     </div>
+    <span class="spacer"></span>
     <div class="conn-status">
       <div class="conn-dot" id="connDot"></div>
       <span id="connLabel">Disconnected</span>
     </div>
+    <select class="factory-select" id="filterFactory" title="Kelompokkan / pilih factory">
+      <option value="ALL">Semua Factory</option>
+    </select>
+    <button class="theme-toggle" id="themeToggle" title="Tema terang / gelap">🌙</button>
+    <button class="theme-toggle" id="logoutBtn" title="Keluar">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+    </button>
   </div>
 
   <div class="summary-bar" id="summaryBar">
@@ -58,7 +67,7 @@
     <span class="filter-count" id="filterCount"></span>
   </div>
 
-  <div class="grid" id="deviceGrid"></div>
+  <div id="deviceGrid"></div>
 
   <!-- FAB -->
   <button class="fab" id="fabAdd" title="Add Device">＋</button>

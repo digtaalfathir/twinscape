@@ -34,9 +34,30 @@ const server = http.createServer(app);
 
 // JSON body parsing for potential future POST endpoints
 app.use(express.json());
+app.set("trust proxy", 1);   // hormati X-Forwarded-Proto (cookie Secure di belakang proxy)
+
+const publicDir = path.join(ROOT_DIR, config.publicDir || "public");
+
+// ================= AUTH: login (publik) =================
+const auth = require("./auth");
+app.get("/login", (_req, res) => res.sendFile(path.join(publicDir, "login.html")));
+app.post("/api/login", (req, res) => {
+  const { username, password } = req.body || {};
+  const user = auth.loadUsers().find((u) => u.username === username);
+  if (!user || !auth.verifyPassword(password || "", user)) return res.status(401).json({ error: "Username atau password salah." });
+  const secure = req.secure ? "; Secure" : "";
+  res.setHeader("Set-Cookie", `${auth.COOKIE}=${auth.makeToken(username)}; HttpOnly; SameSite=Lax; Path=/; Max-Age=${auth.MAXAGE}${secure}`);
+  res.json({ ok: true });
+});
+app.post("/api/logout", (_req, res) => {
+  res.setHeader("Set-Cookie", `${auth.COOKIE}=; HttpOnly; SameSite=Lax; Path=/; Max-Age=0`);
+  res.json({ ok: true });
+});
+
+// mulai sini WAJIB login (kecuali /login, /api/login, /api/logout, /health)
+app.use(auth.middleware);
 
 // ================= STATIC FILES (Frontend) =================
-const publicDir = path.join(ROOT_DIR, config.publicDir || "public");
 app.use(express.static(publicDir));
 
 // ================= API ROUTES =================
@@ -53,7 +74,8 @@ app.get("*", (req, res) => {
 
 // ================= WEBSOCKET =================
 const wsPath = config.wsPath || "/ws";
-websocketServer.init(server, wsPath, monitor);
+websocketServer.init(server, wsPath, monitor, (info, cb) =>
+  auth.userFromReq(info.req) ? cb(true) : cb(false, 401, "Unauthorized"));
 
 // ================= START MONITORING ENGINE =================
 monitor.start();
