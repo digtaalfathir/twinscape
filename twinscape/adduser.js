@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Tambah / perbarui akun login Stechoq Pulse.
+ * Tambah / perbarui akun login Twinscape.
  *   node v2/adduser.js <username>            → diminta password (tersembunyi)
  *   node v2/adduser.js <username> <password> → non-interaktif
  * Password di-hash scrypt lalu disimpan ke v2/users.json. Hapus akun = edit file itu.

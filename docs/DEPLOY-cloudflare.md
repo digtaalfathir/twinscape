@@ -1,4 +1,4 @@
-# Publikasikan Stechoq Pulse via Cloudflare Tunnel
+# Publikasikan Twinscape via Cloudflare Tunnel
 
 PC ini di balik VPN/NAT (tak punya IP publik sendiri). **Cloudflare Tunnel** membuat koneksi
 **keluar** dari PC ke Cloudflare, lalu Cloudflare menyajikan app ke internet (HTTPS + WebSocket
@@ -14,14 +14,14 @@ otomatis). Tak perlu buka port / atur gerbang. `cloudflared` menyambung langsung
 
 ## 0. Bersihkan nginx + pastikan app jalan
 ```bash
-cd ~/Documents/Hardware/serversidemonitor
+cd ~/Documents/Hardware/twinscape
 # nginx tak dipakai lagi (tunnel langsung ke app)
 sudo rm -f /etc/nginx/sites-enabled/iot-node.conf /etc/nginx/sites-enabled/default
 sudo systemctl stop nginx && sudo systemctl disable nginx
 
 # (disarankan) kunci app hanya untuk lokal + tunnel
-nano v2/ecosystem.config.js         # aktifkan lagi: V2_HOST: "127.0.0.1"
-pm2 delete stechoq-pulse && pm2 start v2/ecosystem.config.js && pm2 save
+nano twinscape/ecosystem.config.js         # aktifkan lagi: V2_HOST: "127.0.0.1"
+pm2 delete twinscape-v2 && pm2 start twinscape/ecosystem.config.js && pm2 save
 
 # pastikan app hidup di :10102
 curl -I http://localhost:10102/login    # harus 200
@@ -44,7 +44,7 @@ Akan muncul baris seperti:
 ```
 https://xxxx-xxxx-xxxx.trycloudflare.com
 ```
-Buka URL itu dari HP/laptop mana pun (data seluler pun bisa) → **login Pulse muncul**, live data jalan (WS lewat wss otomatis). Ini membuktikan tunnel bekerja. Tekan **Ctrl-C** untuk stop.
+Buka URL itu dari HP/laptop mana pun (data seluler pun bisa) → **login Twinscape muncul**, live data jalan (WS lewat wss otomatis). Ini membuktikan tunnel bekerja. Tekan **Ctrl-C** untuk stop.
 > URL ini **sementara** (ganti tiap dijalankan). Untuk domain tetap → Bagian 3.
 
 ## 3. Tunnel permanen + domain asli (metode dashboard/token — paling mudah)
@@ -66,7 +66,7 @@ Prasyarat: `stechoq-j.com` sudah ada di akun Cloudflare (langkah lead).
    - **Save**. (Cloudflare otomatis membuat DNS-nya.)
 5. WebSocket sudah aktif default. (Kalau ragu: Public hostname → Additional application settings → pastikan tidak dimatikan.)
 
-Tunggu ±1 menit, lalu buka **https://iot-node.sugity.stechoq-j.com** → login Pulse, gembok 🔒 aktif.
+Tunggu ±1 menit, lalu buka **https://iot-node.sugity.stechoq-j.com** → login Twinscape, gembok 🔒 aktif.
 
 ## 4. Verifikasi & catatan
 - **Cek service**: `sudo systemctl status cloudflared` (harus running) · log: `sudo journalctl -u cloudflared -f`.

@@ -1,0 +1,174 @@
+{
+  "IOT NODE 001": [],
+  "Printer M#5": [],
+  "DCS MIXING MATERIAL F4": [],
+  "DCS PLAYMAKER F4": [],
+  "DCS QI F4": [],
+  "DCS REPAIR IN LINE F4": [],
+  "DCS POLES F4": [],
+  "DCS TASK FORCE F4": [],
+  "Gate Inbound": [
+    {
+      "timestamp": "2026-07-12 07:55:09",
+      "status": "DOWN"
+    },
+    {
+      "timestamp": "2026-07-12 23:47:59",
+      "status": "UP"
+    }
+  ],
+  "Gate Outbound": [
+    {
+      "timestamp": "2026-07-12 07:55:09",
+      "status": "DOWN"
+    },
+    {
+      "timestamp": "2026-07-12 23:47:59",
+      "status": "UP"
+    }
+  ],
+  "DCS MATERIAL INPUT F4": [
+    {
+      "timestamp": "2026-07-12 23:50:58",
+      "status": "DOWN"
+    }
+  ],
+  "DCS INJECTION RESIN1 F4": [
+    {
+      "timestamp": "2026-07-12 23:50:58",
+      "status": "DOWN"
+    }
+  ],
+  "DCS INJECTION RESIN2 F4": [
+    {
+      "timestamp": "2026-07-12 23:50:58",
+      "status": "DOWN"
+    }
+  ],
+  "DCS INJECTION RESIN3 F4": [
+    {
+      "timestamp": "2026-07-12 23:50:58",
+      "status": "DOWN"
+    }
+  ],
+  "PLC INJECTION F4": [
+    {
+      "timestamp": "2026-07-12 23:50:58",
+      "status": "DOWN"
+    }
+  ],
+  "DCS REPAIR OUT LINE F4": [
+    {
+      "timestamp": "2026-07-12 23:50:58",
+      "status": "DOWN"
+    }
+  ],
+  "DCS INJECTION 1300T F3": [
+    {
+      "timestamp": "2026-07-12 23:50:58",
+      "status": "DOWN"
+    }
+  ],
+  "DCS INJECTION1 1600T F3": [
+    {
+      "timestamp": "2026-07-12 23:50:58",
+      "status": "DOWN"
+    }
+  ],
+  "DCS INJECTION1 2500T F3": [
+    {
+      "timestamp": "2026-07-12 23:50:58",
+      "status": "DOWN"
+    }
+  ],
+  "DCS INJECTION2 2500T F3": [
+    {
+      "timestamp": "2026-07-12 23:50:58",
+      "status": "DOWN"
+    }
+  ],
+  "DCS INJECTION3 2500T F3": [
+    {
+      "timestamp": "2026-07-12 23:50:58",
+      "status": "DOWN"
+    }
+  ],
+  "DCS INJECTION2 1600T F3": [
+    {
+      "timestamp": "2026-07-12 23:50:58",
+      "status": "DOWN"
+    }
+  ],
+  "DCS INJECTION1 KRW": [
+    {
+      "timestamp": "2026-07-12 23:50:58",
+      "status": "DOWN"
+    }
+  ],
+  "DCS INJECTION2 KRW": [
+    {
+      "timestamp": "2026-07-12 23:50:58",
+      "status": "DOWN"
+    }
+  ],
+  "DCS INJECTION3 KRW": [
+    {
+      "timestamp": "2026-07-12 23:50:58",
+      "status": "DOWN"
+    }
+  ],
+  "DCS INJECTION4 KRW": [
+    {
+      "timestamp": "2026-07-12 23:50:58",
+      "status": "DOWN"
+    }
+  ],
+  "DCS INJECTION5 KRW": [
+    {
+      "timestamp": "2026-07-12 23:50:58",
+      "status": "DOWN"
+    }
+  ],
+  "DCS MATERIAL1 KRW": [
+    {
+      "timestamp": "2026-07-12 23:50:58",
+      "status": "DOWN"
+    }
+  ],
+  "DCS MATERIAL2 KRW": [
+    {
+      "timestamp": "2026-07-12 23:50:58",
+      "status": "DOWN"
+    }
+  ],
+  "PC SERVER KAMERA": [
+    {
+      "timestamp": "2026-07-12 23:50:58",
+      "status": "DOWN"
+    }
+  ],
+  "Camera QI KRW": [
+    {
+      "timestamp": "2026-07-12 23:50:58",
+      "status": "DOWN"
+    }
+  ],
+  "CAMERA AO KRW": [
+    {
+      "timestamp": "2026-07-12 23:50:58",
+      "status": "DOWN"
+    }
+  ],
+  "SERVER SUGITY": [
+    {
+      "timestamp": "2026-07-12 23:50:58",
+      "status": "DOWN"
+    }
+  ],
+  "SERVER CAMERA KRW": [
+    {
+      "timestamp": "2026-07-12 23:50:58",
+      "status": "DOWN"
+    }
+  ]
+}

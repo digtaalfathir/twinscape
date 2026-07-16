@@ -36,15 +36,15 @@ flat/clean, low-poly** (Cisco pun begitu — lihat referensi), dan gampang diraw
 
 | Komponen | File | Fungsi |
 |---|---|---|
-| v1 dashboard | `src/app.js` (+ `public/`) | Kartu status device v1 (produksi, jangan diubah). Port 10101 |
-| **Stechoq Pulse — Viewer 3D** | `v2/public/index.html` + `js/scene-view.js` | Monitoring 3D (default). Muat `scene.json` per lokasi/lantai + status live |
-| **Stechoq Pulse — Viewer 2D** | `v2/public/floormap.html` + `js/floormap.js` | Monitoring 2D (SVG). Muat `layout2d.json` + status live |
-| Chrome bersama | `v2/public/js/pulse-chrome.js` | Tema, toggle 2D/3D, deep-link, dropdown lokasi/lantai, cari, filter, alert, share |
-| Tema | `v2/public/css/pulse.css` | Dark/light, aksen biru, responsif |
-| Server v2 | `v2/server.js` + `v2/locations.json` | Statik + `/api/locations` + proxy `/ws?loc=<id>` ke WS eksternal. Port 10102 |
+| v1 dashboard | `legacy/src/app.js` (+ `legacy/public/`) | Kartu status device v1 (produksi, jangan diubah). Port 10101 |
+| **Twinscape — Viewer 3D** | `twinscape/public/index.html` + `js/scene-view.js` | Monitoring 3D (default). Muat `scene.json` per lokasi/lantai + status live |
+| **Twinscape — Viewer 2D** | `twinscape/public/floormap.html` + `js/floormap.js` | Monitoring 2D (SVG). Muat `layout2d.json` + status live |
+| Chrome bersama | `twinscape/public/js/pulse-chrome.js` | Tema, toggle 2D/3D, deep-link, dropdown lokasi/lantai, cari, filter, alert, share |
+| Tema | `twinscape/public/css/pulse.css` | Dark/light, aksen biru, responsif |
+| Server v2 | `twinscape/server.js` + `twinscape/locations.json` | Statik + `/api/locations` + proxy `/ws?loc=<id>` ke WS eksternal. Port 10102 |
 | **Builder (standalone)** | `builder/` (3D + 2D, port 10103) | Authoring `scene.json` / `layout2d.json` (terpisah dari monitoring) |
 | Skema data | `scene.json`, `layout2d.json`, `locations.json` | 3D / 2D / registry lokasi (+ `floors`) |
-| Aset 3D | `v2/public/vendor/three/`, `v2/public/models/` | Three.js ter-vendor (offline), folder model |
+| Aset 3D | `twinscape/public/vendor/three/`, `twinscape/public/models/` | Three.js ter-vendor (offline), folder model |
 
 **Linking device sudah jalan:** samakan IP (`pin.ip`/`model.deviceIp` = `device.ip`) → runtime warnai marker hijau/merah.
 **Fase A–F selesai.** E6 (library aset) & LOD runtime **di-skip**; **Fase G (package npm) tidak dikerjakan**. E2 (panel zona) disembunyikan & E7 (warna zona) dimatikan sementara — fungsi tetap, tinggal diaktifkan bila perlu.
@@ -98,7 +98,7 @@ flat/clean, low-poly** (Cisco pun begitu — lihat referensi), dan gampang diraw
 - [ ] **B3 — Simpan ke server** ⏭️ SKIP (sengaja — v2 mau berdiri sendiri tanpa backend tulis-file).
 - [x] **B4 — Katalog model** (M) ✅ DONE — manifest statis `models/models.json` (tanpa endpoint, cocok standalone) → panel "Katalog Model": klik taruh di tengah / **drag** ke lantai. Tombol ⟳ refresh.
 - [x] **B5 — Snapping & guide lanjut** (S) ✅ DONE — snap ke vertex tembok lain (marker hijau) + garis bantu sejajar (align x/z), berlaku saat gambar tembok & geser vertex. Angle-snap "Lurus" tetap.
-- [x] **B6 — Builder standalone** (M) ✅ DONE — v2 sudah app terpisah (`npm run v2`); Builder tak butuh backend (WS opsional). Dokumentasi `v2/README.md` (struktur folder, cara jalan `npx serve v2/public`, tak bergantung v1).
+- [x] **B6 — Builder standalone** (M) ✅ DONE — v2 sudah app terpisah (`npm start`); Builder tak butuh backend (WS opsional). Dokumentasi `twinscape/README.md` (struktur folder, cara jalan `npx serve twinscape/public`, tak bergantung v1).
 
 ---
 

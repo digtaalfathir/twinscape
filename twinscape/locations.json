@@ -1,0 +1,25 @@
+{
+  "_info": "Daftar tempat yang dimonitor v2. Tiap tempat menerima data dari WS server yang SUDAH running (bukan di-ping v2). Tambah entri untuk tempat baru; 'ws' boleh beda IP:port per tempat (atau sama). 'scene3d'/'layout2d' = file denah untuk tempat itu.",
+  "locations": [
+    {
+      "id": "jmp",
+      "name": "JMP Warehouse",
+      "ws": "ws://10.10.1.223:10011/ws",
+      "scene3d": "/assets/JMP/scene.json",
+      "layout2d": "/assets/JMP/layout2d.json"
+    },
+    {
+      "id": "sugity",
+      "name": "Sugity Creatives",
+      "ws": "ws://localhost:10011/ws",
+      "scene3d": "/assets/sugity/scenesugityf2.json",
+      "layout2d": "/assets/sugity/layout2dsugityf2.json",
+      "floors":[
+        {"id":"f2","name":"Factory 2","scene3d":"/assets/sugity/scenesugityf2.json","layout2d":"/assets/sugity/layout2dsugityf2.json"},
+        {"id":"f3","name":"Factory 3","scene3d":"/assets/sugity/scenesugityf3.json","layout2d":"/assets/sugity/layout2dsugityf3.json"},
+        {"id":"f41","name":"Factory 4 Floor 1","scene3d":"/assets/sugity/scenesugityf4.json","layout2d":"/assets/sugity/layout2dsugityf4.json"},
+        {"id":"f42","name":"Factory 4 Floor 2","scene3d":"/scene.example.json","layout2d":"/layout2d.example.json"}
+      ]
+    }
+  ]
+}

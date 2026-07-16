@@ -10,12 +10,12 @@ npx @gltf-transform/cli optimize input.glb output.glb --compress meshopt
 npx @gltf-transform/cli optimize input.glb output.glb \
   --texture-size 1024 --compress meshopt
 ```
-Taruh hasilnya di `v2/public/models/` dan rujuk dari `scene.json` seperti biasa.
+Taruh hasilnya di `twinscape/public/models/` dan rujuk dari `scene.json` seperti biasa.
 
 ## 2. Vendor decoder meshopt (sekali, offline)
 Salin **satu file** ini dari paket `three` ke:
 ```
-v2/public/vendor/three/addons/libs/meshopt_decoder.module.js
+twinscape/public/vendor/three/addons/libs/meshopt_decoder.module.js
 ```
 Sumbernya: `node_modules/three/examples/jsm/libs/meshopt_decoder.module.js`
 (file ini self-contained — wasm-nya sudah embedded base64, jadi cocok untuk offline).

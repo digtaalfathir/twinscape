@@ -1,22 +1,23 @@
 node_modules/
 dist/
 
-# Runtime data — ditulis ulang oleh app tiap siklus monitoring.
+# Runtime data v1 (classic) — ditulis ulang oleh app tiap siklus monitoring.
 # JANGAN diversion agar `git pull` tidak selalu bentrok.
-data/daily_stats.json
-data/history.json
-data/network_stats.json
-data/status_snapshot.json
+legacy/data/daily_stats.json
+legacy/data/history.json
+legacy/data/network_stats.json
+legacy/data/status_snapshot.json
 
 # Logs (harian, selalu berubah)
-logs/
+legacy/logs/
+twinscape/logs/
 
-# v2 Stechoq Pulse — akun & rahasia sesi (JANGAN di-commit)
-v2/users.json
-v2/.pulse-secret
+# Twinscape (v2) — akun & rahasia sesi (JANGAN di-commit)
+twinscape/users.json
+twinscape/.pulse-secret
 
-# v1 dashboard — akun & rahasia sesi (JANGAN di-commit)
-data/users.json
-data/.dashboard-secret
+# v1 classic — akun & rahasia sesi (JANGAN di-commit)
+legacy/data/users.json
+legacy/data/.dashboard-secret
 
-# Catatan: data/devices.json TETAP dilacak (daftar device / konfigurasi).
+# Catatan: legacy/data/devices.json TETAP dilacak (daftar device / konfigurasi).

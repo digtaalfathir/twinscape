@@ -306,7 +306,7 @@ function buildFromScene(s) {
     zones3d.push({                             // E2/E7: tiap lantai = 1 zona
       name: d.name || d.label || `Zona ${i + 1}`,
       bounds: { minX: d.x - d.w / 2, maxX: d.x + d.w / 2, minZ: d.z - d.d / 2, maxZ: d.z + d.d / 2 },
-      mesh: fm, baseHex: fm.material.color.getHex(), up: 0, down: 0, total: 0,
+      mesh: fm, baseHex: (fm.material || fm.children[0]?.material)?.color.getHex() ?? 0x3a3f47, up: 0, down: 0, total: 0,
     });
     const t = 0.03 + (d.order || 0) * 0.006;   // = permukaan atas (samakan dengan buildFloor)
     if (floorTop === null || t > floorTop) floorTop = t;
@@ -408,12 +408,51 @@ function buildFloor(d) {
     emissive: d.type === "green" ? 0x0c3f22 : 0x000000, emissiveIntensity: d.type === "green" ? 0.35 : 0,
   });
   const H = 0.25;                               // volume/tebal lantai (bukan plane tipis)
-  const topY = 0.03 + (d.order || 0) * 0.006;   // permukaan atas; order = mana yang di depan
+  const base = 0.03 + (d.order || 0) * 0.006;   // permukaan dasar; order = mana yang di depan
+  const elev = d.elev || 0;
+  const shape = d.shape || "flat";
+  let obj;
+  if (shape === "ramp" && elev > 0) obj = buildRamp(d, mat, H, base, elev);
+  else if (shape === "stairs" && elev > 0) obj = buildStairs(d, mat, base, elev);
+  else {                                        // datar (platform bila elev>0)
+    obj = new THREE.Mesh(new THREE.BoxGeometry(d.w, H, d.d), mat);
+    obj.position.set(d.x, base + elev - H / 2, d.z);
+    obj.receiveShadow = true;
+  }
+  obj.renderOrder = d.order || 0;
+  return obj;
+}
+// samakan persis dengan Scene Builder. ponytail: ramp/tangga visual-only (tanpa collision).
+function buildRamp(d, mat, H, base, elev) {
+  const axis = d.dir === "+x" || d.dir === "-x" ? "x" : "z";
+  const run = axis === "x" ? d.w : d.d;
+  const ang = Math.atan2(elev, run);
   const m = new THREE.Mesh(new THREE.BoxGeometry(d.w, H, d.d), mat);
-  m.position.set(d.x, topY - H / 2, d.z);
-  m.renderOrder = d.order || 0;
   m.receiveShadow = true;
+  if (axis === "x") m.rotation.z = d.dir === "+x" ? ang : -ang;
+  else m.rotation.x = d.dir === "+z" ? -ang : ang;
+  m.position.set(d.x, base + (run / 2) * Math.sin(ang), d.z);
   return m;
+}
+function buildStairs(d, mat, base, elev) {
+  const axis = d.dir === "+x" || d.dir === "-x" ? "x" : "z";
+  const run = axis === "x" ? d.w : d.d;
+  const n = Math.max(2, Math.round(elev / 0.25));
+  const stepH = elev / n, stepRun = run / n;
+  const sign = d.dir === "+x" || d.dir === "+z" ? 1 : -1;
+  const g = new THREE.Group();
+  for (let i = 0; i < n; i++) {
+    const h = stepH * (i + 1);
+    const geo = axis === "x" ? new THREE.BoxGeometry(stepRun, h, d.d) : new THREE.BoxGeometry(d.w, h, stepRun);
+    const s = new THREE.Mesh(geo, mat);
+    s.receiveShadow = true;
+    const off = sign * (-run / 2 + stepRun * (i + 0.5));
+    if (axis === "x") s.position.set(off, base + h / 2, 0);
+    else s.position.set(0, base + h / 2, off);
+    g.add(s);
+  }
+  g.position.set(d.x, 0, d.z);
+  return g;
 }
 
 // text label (sprite) — identical to Scene Builder
@@ -617,7 +656,7 @@ function updateZones() {
     z.total++;
     if (o.status === "UP") z.up++; else if (o.status === "DOWN") z.down++;
   }
-  if (ZONE_TINT) zones3d.forEach((z) => { if (z.mesh) z.mesh.material.color.setHex(z.down > 0 ? 0x7a2533 : z.baseHex); });   // E7 (dimatikan)
+  if (ZONE_TINT) zones3d.forEach((z) => { const mm = z.mesh && (z.mesh.material || z.mesh.children[0]?.material); if (mm) mm.color.setHex(z.down > 0 ? 0x7a2533 : z.baseHex); });   // E7 (dimatikan)
   renderZonePanel(zones3d);
 }
 function renderZonePanel(zones) {

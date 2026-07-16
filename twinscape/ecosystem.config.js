@@ -1,5 +1,5 @@
 /**
- * PM2 — Stechoq Pulse (monitoring v2) SAJA.
+ * PM2 — Twinscape (monitoring v2) SAJA.
  * Builder & v1 TIDAK ikut di sini (builder = internal, jalankan manual saat perlu).
  *
  * Jalankan dari root repo:
@@ -13,7 +13,7 @@ const path = require("path");
 module.exports = {
   apps: [
     {
-      name: "stechoq-pulse",
+      name: "twinscape-v2",
       script: "server.js",
       cwd: __dirname,                 // = folder v2/ → server.js, locations.json, public/ ada di sini
       instances: 1,

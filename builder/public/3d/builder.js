@@ -547,6 +547,7 @@ function floorTap(p) {
     x: r3((a.x + b.x) / 2), z: r3((a.z + b.z) / 2),
     w: r3(Math.abs(b.x - a.x)), d: r3(Math.abs(b.z - a.z)),
     type: $("floorType").value, color: $("floorColor").value, order: nextFloorOrder(),
+    elev: clampNum($("floorElev").value, 0, 0, 20), shape: $("floorShape").value, dir: $("floorDir").value,
   };
   addObject("floor", buildFloor(data), data);
   toast("Lantai dibuat", true);
@@ -572,12 +573,51 @@ function buildFloor(d) {
     emissive: d.type === "green" ? 0x0c3f22 : 0x000000, emissiveIntensity: d.type === "green" ? 0.35 : 0,
   });
   const H = 0.25;                               // volume/tebal lantai
-  const topY = 0.03 + (d.order || 0) * 0.006;   // permukaan atas; order tinggi = di depan
+  const base = 0.03 + (d.order || 0) * 0.006;   // permukaan dasar; order tinggi = di depan
+  const elev = d.elev || 0;
+  const shape = d.shape || "flat";
+  let obj;
+  if (shape === "ramp" && elev > 0) obj = buildRamp(d, mat, H, base, elev);
+  else if (shape === "stairs" && elev > 0) obj = buildStairs(d, mat, base, elev);
+  else {                                        // datar (platform bila elev>0)
+    obj = new THREE.Mesh(new THREE.BoxGeometry(d.w, H, d.d), mat);
+    obj.position.set(d.x, base + elev - H / 2, d.z);   // permukaan atas di base+elev
+    obj.receiveShadow = true;
+  }
+  obj.renderOrder = d.order || 0;
+  return obj;
+}
+// ponytail: ramp = box dimiringkan, visual-only (tanpa collision). Ujung bawah menempel base.
+function buildRamp(d, mat, H, base, elev) {
+  const axis = d.dir === "+x" || d.dir === "-x" ? "x" : "z";
+  const run = axis === "x" ? d.w : d.d;
+  const ang = Math.atan2(elev, run);
   const m = new THREE.Mesh(new THREE.BoxGeometry(d.w, H, d.d), mat);
-  m.position.set(d.x, topY - H / 2, d.z);
-  m.renderOrder = d.order || 0;
   m.receiveShadow = true;
+  if (axis === "x") m.rotation.z = (d.dir === "+x" ? ang : -ang);
+  else m.rotation.x = (d.dir === "+z" ? -ang : ang);
+  m.position.set(d.x, base + (run / 2) * Math.sin(ang), d.z);   // ujung rendah ~base, ujung tinggi ~base+elev
   return m;
+}
+function buildStairs(d, mat, base, elev) {
+  const axis = d.dir === "+x" || d.dir === "-x" ? "x" : "z";
+  const run = axis === "x" ? d.w : d.d;
+  const n = Math.max(2, Math.round(elev / 0.25));   // ~25cm per anak tangga
+  const stepH = elev / n, stepRun = run / n;
+  const sign = d.dir === "+x" || d.dir === "+z" ? 1 : -1;
+  const g = new THREE.Group();
+  for (let i = 0; i < n; i++) {
+    const h = stepH * (i + 1);                       // blok padat dari base ke tinggi anak tangga
+    const geo = axis === "x" ? new THREE.BoxGeometry(stepRun, h, d.d) : new THREE.BoxGeometry(d.w, h, stepRun);
+    const s = new THREE.Mesh(geo, mat);
+    s.receiveShadow = true; s.castShadow = true;
+    const off = sign * (-run / 2 + stepRun * (i + 0.5));   // dari ujung entri (rendah) ke ujung tinggi
+    if (axis === "x") s.position.set(off, base + h / 2, 0);
+    else s.position.set(0, base + h / 2, off);
+    g.add(s);
+  }
+  g.position.set(d.x, 0, d.z);
+  return g;
 }
 function rebuildFloor(rec) {
   scene.remove(rec.obj);
@@ -832,6 +872,9 @@ function updateInspector() {
   if (selType === "floor") {
     $("floorSelType").value = selected.data.type || "concrete";
     $("floorSelColor").value = selected.data.color || "#3a3f47";
+    $("floorSelElev").value = selected.data.elev || 0;
+    $("floorSelShape").value = selected.data.shape || "flat";
+    $("floorSelDir").value = selected.data.dir || "+x";
   }
   if (selType === "wall") populateWallSel();
 }
@@ -1130,9 +1173,13 @@ function bindUI() {
     if (selected?.type !== "floor") return;
     selected.data.type = $("floorSelType").value;
     selected.data.color = $("floorSelColor").value;
+    selected.data.elev = clampNum($("floorSelElev").value, 0, 0, 20);
+    selected.data.shape = $("floorSelShape").value;
+    selected.data.dir = $("floorSelDir").value;
     rebuildFloor(selected);
   };
   $("floorSelType").onchange = floorEdit; $("floorSelColor").oninput = floorEdit;
+  $("floorSelElev").oninput = floorEdit; $("floorSelShape").onchange = floorEdit; $("floorSelDir").onchange = floorEdit;
   $("btnFloorFront").onclick = () => { if (selected?.type === "floor") { pushHistory(); selected.data.order = nextFloorOrder(); rebuildFloor(selected); toast("Lantai ke depan", true); } };
   $("btnFloorBack").onclick = () => {
     if (selected?.type !== "floor") return;

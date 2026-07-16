@@ -1,4 +1,4 @@
-# Stechoq Pulse — Monitoring (v2)
+# Twinscape — Monitoring (v2)
 
 Viewer monitoring digital-twin (2D & 3D) untuk status hardware, terinspirasi Cisco Spaces.
 **Read-only**: v2 TIDAK meng-ping device — ia **konsumen** yang menerima data dari **WS server yang
@@ -13,7 +13,7 @@ sudah running** (format `{ devices, timestamp }`), lalu memetakan status ke mark
 ## 1. Struktur folder
 
 ```
-v2/
+twinscape/
   server.js              server statik + API + proxy WS  (port default 10102)
   ecosystem.config.js    konfigurasi PM2 (hanya monitoring)
   locations.json         ← DAFTAR TEMPAT (kamu edit ini untuk nambah lokasi)
@@ -33,7 +33,7 @@ v2/
 ## 2. Cara kerja data (penting)
 
 ```
-[WS server tiap lokasi]  --(sudah running di tempat lain)-->  v2/server.js  --proxy /ws?loc=<id>-->  browser
+[WS server tiap lokasi]  --(sudah running di tempat lain)-->  twinscape/server.js  --proxy /ws?loc=<id>-->  browser
         (ws://IP:PORT/ws)                                     (locations.json)                      (viewer)
 ```
 
@@ -47,7 +47,7 @@ v2/
 
 ```bash
 npm install
-npm run v2            # → http://localhost:10102  (langsung 3D)
+npm start            # → http://localhost:10102  (langsung 3D)
 ```
 Belum ada `scene.json`/`layout2d.json`? Viewer otomatis menampilkan **contoh** bawaan.
 
@@ -59,27 +59,27 @@ Prasyarat server: **Node.js ≥ 16**, **PM2** (`npm i -g pm2`), dan (untuk domai
 
 ```bash
 # 1. ambil kode + dependensi
-git clone <repo> && cd ServerSideMonitoring
+git clone <repo> && cd twinscape
 npm install --omit=dev          # cukup express + ws untuk v2
 
 # 2. siapkan folder log + isi locations.json (lihat bagian 6)
-mkdir -p v2/logs
-nano v2/locations.json
+mkdir -p twinscape/logs
+nano twinscape/locations.json
 
 # 2b. buat akun login (WAJIB — tanpa akun tak ada yang bisa masuk)
-node v2/adduser.js <username>         # diminta password (lihat bagian "Login & akun")
+node twinscape/adduser.js <username>         # diminta password (lihat bagian "Login & akun")
 
 # 3. jalankan HANYA monitoring lewat PM2
-pm2 start v2/ecosystem.config.js      # atau: npm run pulse:start
+pm2 start twinscape/ecosystem.config.js      # atau: npm run pulse:start
 pm2 save                              # simpan daftar proses
 pm2 startup                           # ikuti perintah yang dicetak → auto-start saat reboot
 
 # cek
 pm2 status
-pm2 logs stechoq-pulse                # atau: npm run pulse:logs
+pm2 logs twinscape-v2                # atau: npm run pulse:logs
 ```
 
-Proses bernama **`stechoq-pulse`**, listen di **127.0.0.1:10102** (lihat `ecosystem.config.js`).
+Proses bernama **`twinscape-v2`**, listen di **127.0.0.1:10102** (lihat `ecosystem.config.js`).
 Builder & v1 **tidak** disertakan di config ini.
 
 **Perintah harian:**
@@ -90,25 +90,25 @@ npm run pulse:logs
 ```
 
 ### Ubah port / binding
-Edit `env` di `v2/ecosystem.config.js` lalu `pm2 restart stechoq-pulse --update-env`:
+Edit `env` di `twinscape/ecosystem.config.js` lalu `pm2 restart twinscape-v2 --update-env`:
 - `V2_PORT` — port internal (default 10102).
 - `V2_HOST` — `127.0.0.1` (hanya via nginx, disarankan) atau hapus untuk akses langsung dari LAN.
 - `MONITOR_WS` — sumber WS fallback bila `locations.json` kosong (opsional).
-- `PULSE_SECRET` — kunci penanda-tangan sesi login. Opsional: kalau tak diisi, dibuat otomatis & disimpan di `v2/.pulse-secret`. Isi sendiri (string acak panjang) bila menjalankan >1 instance.
+- `PULSE_SECRET` — kunci penanda-tangan sesi login. Opsional: kalau tak diisi, dibuat otomatis & disimpan di `twinscape/.pulse-secret`. Isi sendiri (string acak panjang) bila menjalankan >1 instance.
 
 ## 4b. Login & akun
 
 Akses dibatasi **akun terdaftar**. Halaman/`API`/`WS` semuanya butuh sesi login (kecuali halaman login).
 
 ```bash
-node v2/adduser.js madani            # tambah akun, diminta password (tersembunyi)
-node v2/adduser.js madani rahasia123 # atau non-interaktif (password sbagai argumen)
+node twinscape/adduser.js madani            # tambah akun, diminta password (tersembunyi)
+node twinscape/adduser.js madani rahasia123 # atau non-interaktif (password sbagai argumen)
 ```
-- Akun disimpan di **`v2/users.json`** (password di-hash **scrypt**, bukan plaintext). File ini **tidak** di-commit (`.gitignore`).
-- **Tambah/ubah** akun = jalankan `adduser` lagi (username sama = password di-update). **Hapus** akun = buka `v2/users.json`, hapus entri-nya.
+- Akun disimpan di **`twinscape/users.json`** (password di-hash **scrypt**, bukan plaintext). File ini **tidak** di-commit (`.gitignore`).
+- **Tambah/ubah** akun = jalankan `adduser` lagi (username sama = password di-update). **Hapus** akun = buka `twinscape/users.json`, hapus entri-nya.
 - Setelah tambah/hapus akun, **tak perlu restart** — dibaca saat login.
 - **Logout**: tombol ⎋ di kanan-atas topbar (atau hapus cookie). Sesi bertahan **7 hari**.
-- Password lupa? Set ulang: `node v2/adduser.js <username>` (menimpa yang lama).
+- Password lupa? Set ulang: `node twinscape/adduser.js <username>` (menimpa yang lama).
 
 > Cookie sesi otomatis pakai flag **Secure** saat via HTTPS (butuh `X-Forwarded-Proto` dari nginx — sudah ada di contoh config).
 
@@ -164,10 +164,10 @@ Dropdown lokasi muncul otomatis bila **>1 lokasi**; dropdown lantai muncul bila 
 1. **Buat denah** di Builder (internal): `npm run builder` (port 10103) → buat 3D & 2D → **Simpan**
    `scene.json` dan `layout2d.json`. Siapkan model `.glb` yang dipakai.
 2. **Taruh file** di server:
-   - `scene.json` / `layout2d.json` → `v2/public/` (boleh diberi nama unik, mis. `scene-gudang-b.json`,
-     atau rapikan ke subfolder `v2/public/scenes/` & `v2/public/layouts/`).
-   - model `.glb` → `v2/public/models/`.
-3. **Tambah 1 entri** di `v2/locations.json` (lihat skema di atas) — set `id`, `name`, `ws`,
+   - `scene.json` / `layout2d.json` → `twinscape/public/` (boleh diberi nama unik, mis. `scene-gudang-b.json`,
+     atau rapikan ke subfolder `twinscape/public/scenes/` & `twinscape/public/layouts/`).
+   - model `.glb` → `twinscape/public/models/`.
+3. **Tambah 1 entri** di `twinscape/locations.json` (lihat skema di atas) — set `id`, `name`, `ws`,
    dan `scene3d`/`layout2d` menunjuk ke file tadi.
 4. **Restart**: `npm run pulse:restart`.
 5. Buka domain → tempat baru muncul di dropdown. Deep-link: `https://domain/?loc=<id>&view=3d`.
@@ -195,7 +195,7 @@ Dropdown lokasi muncul otomatis bila **>1 lokasi**; dropdown lantai muncul bila 
 
 | Gejala | Penyebab & solusi |
 |---|---|
-| Status "Disconnected", marker abu semua | WS upstream di `locations.json` salah/mati; cek `pm2 logs stechoq-pulse`. Via domain: pastikan blok `/ws` nginx (upgrade header) terpasang. |
+| Status "Disconnected", marker abu semua | WS upstream di `locations.json` salah/mati; cek `pm2 logs twinscape-v2`. Via domain: pastikan blok `/ws` nginx (upgrade header) terpasang. |
 | Denah kosong / "Belum ada scene.json" | File `scene3d`/`layout2d` di `locations.json` tak ada di `public/`. Taruh filenya lalu `pulse:restart`. |
 | Device online tapi marker tetap abu | IP tidak cocok — samakan `pin.ip`/`model.deviceIp` dengan `device.ip` dari WS. |
 | Model `.glb` tak muncul | File tak ada di `public/models/` atau path `url` di scene salah. |

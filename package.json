@@ -1,21 +1,22 @@
 {
-  "name": "hardware-monitoring",
+  "name": "twinscape",
   "version": "2.0.0",
-  "description": "Server-Side Hardware Monitoring System with Real-time Dashboard",
-  "main": "src/app.js",
+  "description": "Web monitoring dashboard with live 2D/3D visualization.",
+  "main": "twinscape/server.js",
   "scripts": {
-    "start": "node src/app.js",
-    "dev": "node src/app.js",
-    "v2": "node v2/server.js",
+    "start": "node twinscape/server.js",
+    "dev": "node twinscape/server.js",
+    "twinscape": "node twinscape/server.js",
     "builder": "node builder/server.js",
-    "pm2:start": "pm2 start ecosystem.config.js",
-    "pm2:stop": "pm2 stop hardware-monitoring",
-    "pm2:restart": "pm2 restart hardware-monitoring",
-    "pm2:logs": "pm2 logs hardware-monitoring",
-    "pulse:start": "pm2 start v2/ecosystem.config.js",
-    "pulse:restart": "pm2 restart stechoq-pulse",
-    "pulse:stop": "pm2 stop stechoq-pulse",
-    "pulse:logs": "pm2 logs stechoq-pulse"
+    "classic": "node legacy/src/app.js",
+    "pulse:start": "pm2 start twinscape/ecosystem.config.js",
+    "pulse:restart": "pm2 restart twinscape-v2",
+    "pulse:stop": "pm2 stop twinscape-v2",
+    "pulse:logs": "pm2 logs twinscape-v2",
+    "classic:start": "pm2 start legacy/ecosystem.config.js",
+    "classic:restart": "pm2 restart hardware-monitoring",
+    "classic:stop": "pm2 stop hardware-monitoring",
+    "classic:logs": "pm2 logs hardware-monitoring"
   },
   "dependencies": {
     "express": "^4.21.0",
@@ -25,6 +26,6 @@
   "engines": {
     "node": ">=16.0.0"
   },
-  "author": "",
-  "license": "ISC"
+  "author": "Rifky Andigta Al-Fathir",
+  "license": "MIT"
 }

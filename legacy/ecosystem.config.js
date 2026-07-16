@@ -3,6 +3,7 @@ module.exports = {
     {
       name: "hardware-monitoring",
       script: "./src/app.js",
+      cwd: __dirname,                 // = folder legacy/ → src/app.js, logs/, config.json, data/ ada di sini
       instances: 1,
       autorestart: true,
       watch: false,

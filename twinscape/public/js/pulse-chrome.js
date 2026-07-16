@@ -1,5 +1,5 @@
 /* =====================================================================
-   Stechoq Pulse — CHROME bersama (dipakai index.html [3D] & floormap.html [2D])
+   Twinscape — CHROME bersama (dipakai index.html [3D] & floormap.html [2D])
    Tanggung jawab: tema gelap/terang, toggle 2D/3D, deep-link ?loc=&view=,
    dan pemilih lokasi (dropdown ala Cisco) dari /api/locations.
    Data scene/summary tetap diurus scene-view.js / floormap.js masing-masing.
