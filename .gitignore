@@ -1,6 +1,9 @@
 node_modules/
 dist/
 
+# Arsip lama — disimpan lokal saja, JANGAN di-push
+unused/
+
 # Runtime data v1 (classic) — ditulis ulang oleh app tiap siklus monitoring.
 # JANGAN diversion agar `git pull` tidak selalu bentrok.
 legacy/data/daily_stats.json
