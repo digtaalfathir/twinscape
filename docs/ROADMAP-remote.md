@@ -102,12 +102,18 @@ Monitoring only. Belum ada remote.
 - E2E lolos: passthrough byte dua arah, kapabilitas vnc benar, device tanpa vnc ditolak. SSH (Fase 1/2) tanpa regresi.
 - **Prasyarat pakai:** device tujuan harus menjalankan **server VNC** (port 5900 dst). 2D floormap tetap belum (ditunda).
 
-### Fase 4 — Keamanan serius (sebelum boleh dibuka ke luar)  · L
-- **RBAC**: role → siapa boleh remote device/grup mana (poin "role" yang kamu tunda).
-- **Kredensial**: SSH key dikelola server / secrets vault, bukan file.
-- **Audit log**: siapa remote apa, kapan, berapa lama.
-- **Gerbang depan**: Cloudflare Access / MFA di atas tunnel.
-- Setelah ini baru aman **mengaktifkan remote lewat domain (online)**.
+### Fase 4 — Keamanan serius (sebelum boleh dibuka ke luar)  · sebagian ✅
+
+**✅ SUDAH DIBANGUN (app-code) — RBAC + Audit:**
+- **RBAC** (opt-in): `remotes.json` → blok `roles` + `group` per device; user punya `role` di `users.json` (`node twinscape/adduser.js <user> <pass> --role <role>`). `roles: {admin:{remote:"*"}, operator:{remote:["group:injection","<ip>"]}, viewer:{remote:[]}}`. **Default-deny** (role tak dikenal/kosong → tolak). Tanpa blok `roles` → RBAC **nonaktif** (perilaku Fase 3, tak merusak setup lama).
+- **Enforcement 2 lapis**: `/api/remote` **menyaring** device per role (tombol ikut hilang) **+** WS `/ssh`/`/vnc` **menolak** device di luar izin (gerbang sebenarnya, walau tombol disembunyikan). Verified admin=semua / operator=grup / viewer=none.
+- **Audit log** (selalu aktif): `twinscape/logs/remote-audit.log` (JSON per baris) — `{ts,user,role,action:ssh|vnc,device,event:open|close|denied,durationMs}`. Path via env `AUDIT_FILE`.
+- Env baru: `USERS_FILE`, `REMOTES_FILE`, `AUDIT_FILE` (taruh di luar repo), `REMOTE_DEFAULT_ROLE` (default `viewer`).
+
+**⏳ Sisa (infra/keputusanmu — belum dibangun):**
+- **Kredensial** ✅ (keputusan: **semua di remotes.json**, `.env` cukup `REMOTE_ENABLE=1`): auth SSH per-device/`defaults` — urutan `keyFile` > `password` (langsung) > `passwordEnv`. **Catatan jujur:** password di remotes.json = plaintext, TAPI file gitignored + chmod → **sama amannya dengan `.env`**, cuma satu tempat & simpel untuk banyak device (password sekali di `defaults`, device baru cukup host+label+group). Hash TAK bisa (satu-arah — server perlu password asli untuk login). `keyFile` tetap opsi per-device paling aman. Enkripsi-dengan-master-key = "nanti" kalau perlu.
+- **Gerbang depan**: pilihanmu — **Tailscale/WireGuard** (rekomendasi, tak butuh Cloudflare), CF Access, reverse-proxy SSO, atau MFA di app. Belum diputuskan.
+- Setelah kredensial-key + gerbang depan siap → **baru aman aktifkan remote lewat domain (online)**.
 
 ### Fase 5 — Level tertinggi: lintas-jaringan / multi-site  · L
 Untuk device di jaringan yang **server pusat tak bisa jangkau** (subnet/site lain) → **agent/bridge kecil di jaringan itu** yang "dial home" ke server pusat. Baru di sini "remote di mana saja, device di mana saja" benar-benar lengkap.

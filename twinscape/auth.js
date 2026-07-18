@@ -9,7 +9,7 @@ const crypto = require("crypto");
 const fs = require("fs");
 const path = require("path");
 
-const USERS_FILE = path.join(__dirname, "users.json");
+const USERS_FILE = process.env.USERS_FILE || path.join(__dirname, "users.json");   // boleh taruh di luar repo
 const SECRET_FILE = path.join(__dirname, ".pulse-secret");
 const COOKIE = "pulse_sess";
 const MAXAGE = 7 * 24 * 3600; // 7 hari (detik)

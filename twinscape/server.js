@@ -80,10 +80,12 @@ const sshConfigured = () => !!(REMOTE_ENABLE && (hasMap() || (SSH.host && SSH.us
 function deviceCaps(rec) { return { ssh: !!(rec && rec.ssh && rec.ssh.host), vnc: !!(rec && rec.vnc && rec.vnc.host) }; }
 function resolveAuth(s, dd) {                          // s=device.ssh, dd=defaults.ssh
   const keyFile = s.keyFile || dd.keyFile;
-  if (keyFile) { try { const pf = s.passphraseEnv || dd.passphraseEnv; return { privateKey: fs.readFileSync(keyFile), passphrase: pf ? process.env[pf] : process.env.REMOTE_SSH_PASSPHRASE }; } catch { /* fallthrough */ } }
-  const pwEnv = s.passwordEnv || dd.passwordEnv;
+  if (keyFile) { try { const pf = s.passphraseEnv || dd.passphraseEnv; return { privateKey: fs.readFileSync(keyFile), passphrase: pf ? process.env[pf] : process.env.REMOTE_SSH_PASSPHRASE }; } catch (e) { console.warn(`[remote] keyFile tak terbaca: ${keyFile} (${e.code || e.message}) → coba password`); } }
+  const pw = s.password || dd.password;               // password langsung di remotes.json (semua-di-satu-tempat)
+  if (pw) return { password: pw };
+  const pwEnv = s.passwordEnv || dd.passwordEnv;       // atau rujuk NAMA env
   if (pwEnv && process.env[pwEnv]) return { password: process.env[pwEnv] };
-  return sshAuth();                                    // kredensial default env
+  return sshAuth();                                    // atau default env REMOTE_SSH_* (fallback lama)
 }
 function resolveSSH(deviceKey) {                        // → {host,port,username,...auth} | null
   if (hasMap()) {
@@ -107,6 +109,34 @@ function resolveVNC(deviceKey) {                        // → {host,port,startC
     startCommand: rec.vnc.startCommand || dd.startCommand || null,   // mis. "x11vnc …" — dijalankan via SSH sebelum konek
     startDelayMs: rec.vnc.startDelayMs || dd.startDelayMs || 1500,   // jeda beri waktu server VNC bind
   };
+}
+
+// ---- Fase 4: RBAC (role → izin device/grup). AKTIF hanya bila remotes.json punya "roles". ----
+// remotes.json: { "roles": { "admin":{"remote":"*"}, "operator":{"remote":["group:injection","172.19.88.8"]}, "viewer":{"remote":[]} }, ... }
+// device boleh punya "group". User punya "role" di users.json. Tanpa "roles" → RBAC off (perilaku Fase 3).
+const DEFAULT_ROLE = process.env.REMOTE_DEFAULT_ROLE || "viewer";
+const rbacOn = () => !!(REMOTES && REMOTES.roles);
+function reqUser(req) {                                  // {name,role} | null
+  const name = auth.userFromReq(req);
+  if (!name) return null;
+  const u = auth.loadUsers().find((x) => x.username === name);
+  return { name, role: (u && u.role) || DEFAULT_ROLE };
+}
+function canRemote(role, deviceKey) {
+  if (!rbacOn()) return true;                            // RBAC nonaktif → izinkan
+  const p = role && REMOTES.roles[role];
+  if (!p) return false;                                  // role tak dikenal / kosong → tolak (default-deny)
+  if (p.remote === "*") return true;
+  if (!Array.isArray(p.remote)) return false;
+  const dev = REMOTES.devices[deviceKey] || {};
+  return p.remote.some((tok) => tok === deviceKey || (dev.group && tok === "group:" + dev.group));
+}
+
+// ---- Audit log (siapa remote apa, kapan, berapa lama) → JSON per baris. Selalu aktif. ----
+const AUDIT_FILE = process.env.AUDIT_FILE || path.join(__dirname, "logs", "remote-audit.log");
+function audit(ev) {
+  try { fs.mkdirSync(path.dirname(AUDIT_FILE), { recursive: true }); } catch { /* abaikan */ }
+  fs.appendFile(AUDIT_FILE, JSON.stringify({ ts: new Date().toISOString(), ...ev }) + "\n", () => {});
 }
 
 // ---- daftar lokasi (sumber WS per tempat) ----
@@ -185,15 +215,17 @@ app.get("/api/health", (_req, res) => {
   res.json({ statuses });
 });
 // kapabilitas remote per device (key = IP monitoring) — HANYA boolean ssh/vnc + label. TANPA host/kredensial.
-app.get("/api/remote", (_req, res) => {
+app.get("/api/remote", (req, res) => {
   if (!sshConfigured()) return res.json({ enabled: false });
+  const u = reqUser(req);
   if (hasMap()) {
     const devices = {};
     for (const k in REMOTES.devices) {
+      if (!canRemote(u && u.role, k)) continue;          // RBAC: hanya tampilkan device yang boleh (tombol pun ikut tersaring)
       const c = deviceCaps(REMOTES.devices[k]);
       if (c.ssh || c.vnc) devices[k] = { ssh: c.ssh, vnc: c.vnc, label: REMOTES.devices[k].label || undefined };
     }
-    return res.json({ enabled: true, mode: "map", devices });
+    return res.json({ enabled: true, mode: "map", role: u && u.role, devices });
   }
   res.json({ enabled: true, mode: "single", target: `${SSH.username}@${SSH.host}:${SSH.port}` });   // Fase 1: semua device → SSH
 });
@@ -235,8 +267,15 @@ sshWss.on("connection", (client, req) => {
   let deviceKey = null;
   try { deviceKey = new URL(req.url, "http://x").searchParams.get("device"); } catch {}
   const ctrl = (o) => { try { client.send(JSON.stringify(o)); } catch {} };
+  const u = reqUser(req);
+  if (!canRemote(u && u.role, deviceKey)) {              // RBAC: gerbang sebenarnya (walau tombol disembunyikan)
+    audit({ user: u && u.name, role: u && u.role, action: "ssh", device: deviceKey, event: "denied" });
+    ctrl({ type: "error", msg: "Kamu tak diizinkan me-remote device ini." }); return client.close();
+  }
   const target = resolveSSH(deviceKey);
   if (!target) { ctrl({ type: "error", msg: "Device tak dikenal / tak bisa di-SSH." }); return client.close(); }
+  const startedAt = Date.now();
+  audit({ user: u && u.name, role: u && u.role, action: "ssh", device: deviceKey, event: "open" });
 
   const conn = new SSHClient();
   let stream = null;
@@ -256,7 +295,7 @@ sshWss.on("connection", (client, req) => {
     if (m.t === "d" && stream) stream.write(m.d);
     else if (m.t === "r" && stream) stream.setWindow(m.rows, m.cols, 0, 0);
   });
-  client.on("close", () => { try { conn.end(); } catch {} });
+  client.on("close", () => { try { conn.end(); } catch {} audit({ user: u && u.name, action: "ssh", device: deviceKey, event: "close", durationMs: Date.now() - startedAt }); });
   ctrl({ type: "status", msg: "Menyambung SSH…" });
   conn.connect({ ...target, readyTimeout: 12000, keepaliveInterval: 15000 });   // target = {host,port,username,+auth}
 });
@@ -266,9 +305,16 @@ sshWss.on("connection", (client, req) => {
 vncWss.on("connection", (client, req) => {
   let deviceKey = null;
   try { deviceKey = new URL(req.url, "http://x").searchParams.get("device"); } catch {}
+  const ctrl = (o) => { try { client.send(JSON.stringify(o)); } catch {} };
+  const u = reqUser(req);
+  if (!canRemote(u && u.role, deviceKey)) {
+    audit({ user: u && u.name, role: u && u.role, action: "vnc", device: deviceKey, event: "denied" });
+    ctrl({ type: "error", msg: "Kamu tak diizinkan me-remote device ini." }); try { client.close(); } catch {} return;
+  }
   const target = resolveVNC(deviceKey);
   if (!target) { try { client.close(); } catch {} return; }
-  const ctrl = (o) => { try { client.send(JSON.stringify(o)); } catch {} };
+  const startedAt = Date.now();
+  audit({ user: u && u.name, role: u && u.role, action: "vnc", device: deviceKey, event: "open" });
   let tcp = null, prep = null;
 
   function openPipe() {
@@ -295,7 +341,7 @@ vncWss.on("connection", (client, req) => {
   }
 
   client.on("message", (d) => { try { tcp && tcp.write(d); } catch {} });                  // WS → TCP (aman: RFB server bicara duluan)
-  client.on("close", () => { try { tcp && tcp.destroy(); } catch {} try { prep && prep.end(); } catch {} });
+  client.on("close", () => { try { tcp && tcp.destroy(); } catch {} try { prep && prep.end(); } catch {} audit({ user: u && u.name, action: "vnc", device: deviceKey, event: "close", durationMs: Date.now() - startedAt }); });
   client.on("error", () => { try { tcp && tcp.destroy(); } catch {} try { prep && prep.end(); } catch {} });
 });
 
@@ -306,6 +352,7 @@ server.listen(PORT, HOST, () => {
   LOCATIONS.forEach((l) => console.log(`  Lokasi  : ${l.id}  ←  ${l.ws}`));
   console.log(`  WS proxy: /ws?loc=<id>   (default: ${LOCATIONS[0].id})`);
   console.log(`  Remote  : ${!sshConfigured() ? "OFF (set REMOTE_ENABLE=1 + remotes.json / REMOTE_SSH_HOST)" : hasMap() ? `SSH ON → remotes.json (${Object.keys(REMOTES.devices).length} device)` : `SSH ON → env single: ${SSH.username}@${SSH.host}:${SSH.port}`}`);
+  if (sshConfigured()) console.log(`  RBAC    : ${rbacOn() ? `ON (${Object.keys(REMOTES.roles).length} role) · audit → ${path.relative(process.cwd(), AUDIT_FILE)}` : "OFF (tambah \"roles\" di remotes.json untuk aktifkan) · audit tetap jalan"}`);
   console.log("========================================");
   LOCATIONS.forEach((l) => connectUpstream(l));   // buka koneksi persisten + cache payload
 });

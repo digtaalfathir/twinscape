@@ -76,7 +76,8 @@ body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--t
   background:#0a0d16;border:1px solid var(--border);border-radius:12px;box-shadow:var(--shadow);
   display:none;flex-direction:column;overflow:hidden}
 .ssh-panel.open{display:flex}
-.ssh-head{display:flex;align-items:center;gap:8px;padding:6px 10px;background:#0e1420;border-bottom:1px solid rgba(255,255,255,.08);color:#e6ecf6;font:600 13px Inter,sans-serif}
+.ssh-panel.fullscreen{inset:0;width:auto;height:auto;max-width:none;max-height:none;border-radius:0}
+.ssh-head{display:flex;align-items:center;gap:8px;padding:6px 10px;background:#0e1420;border-bottom:1px solid rgba(255,255,255,.08);color:#e6ecf6;font:600 13px Inter,sans-serif;cursor:move;user-select:none}
 .ssh-dot{width:8px;height:8px;border-radius:50%;background:var(--accent);box-shadow:0 0 8px var(--accent);flex-shrink:0}
 .ssh-title{font-weight:800;letter-spacing:.02em;flex-shrink:0}
 .ssh-tabs{display:flex;gap:4px;overflow-x:auto;flex:1;margin:0 4px;scrollbar-width:thin}
@@ -96,11 +97,12 @@ body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--t
 .ssh-body{flex:1;min-height:0;position:relative;padding:6px 4px 4px 8px;background:#0a0d16}
 .ssh-wrap{position:absolute;inset:6px 4px 4px 8px}
 .ssh-wrap .xterm,.ssh-wrap .xterm .xterm-viewport{height:100%}
-.dt-actions{display:flex;gap:8px;margin:0 0 12px}
-.dt-ssh{flex:1;padding:9px;border:1px solid var(--accent);background:var(--accent-soft);color:var(--accent);
-  border-radius:9px;font:700 13px Inter,sans-serif;cursor:pointer;transition:all .15s}
+.dt-actions{display:flex;gap:8px;margin:2px 0 14px}
+.dt-ssh{flex:1;padding:9px 12px;border:1.5px solid var(--accent);background:transparent;color:var(--accent);
+  border-radius:9px;font:600 13px Inter,sans-serif;letter-spacing:.01em;cursor:pointer;transition:all .14s}
 .dt-ssh:hover{background:var(--accent);color:#fff}
-.dt-ssh.vnc{border-color:#8b5cf6;background:rgba(139,92,246,.14);color:#a78bfa}
+.dt-ssh:active{transform:translateY(1px)}
+.dt-ssh.vnc{border-color:#8b5cf6;color:#8b5cf6}
 .dt-ssh.vnc:hover{background:#8b5cf6;color:#fff}
 
 /* pemilih lokasi (D2) */

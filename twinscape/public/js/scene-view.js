@@ -798,8 +798,8 @@ function renderDetail(d) {
         ${isDown && d.downSince ? `<span style="margin-left:auto;font-size:12px;font-weight:600" id="dtLive">—</span>` : ""}</div>
       ${hasData ? "" : `<div class="dt-empty" style="margin:0 0 12px">Device IP ini belum melapor dari WS lokasi ini.</div>`}
       ${(rcaps.ssh || rcaps.vnc) ? `<div class="dt-actions">
-        ${rcaps.ssh ? `<button class="dt-ssh" id="dtSSH">▸ Open SSH</button>` : ``}
-        ${rcaps.vnc ? `<button class="dt-ssh vnc" id="dtVNC">🖥 Open VNC</button>` : ``}
+        ${rcaps.ssh ? `<button class="dt-ssh" id="dtSSH">Open SSH</button>` : ``}
+        ${rcaps.vnc ? `<button class="dt-ssh vnc" id="dtVNC">Open VNC</button>` : ``}
       </div>` : ``}
       <div class="dt-section">Status Trend</div>
       <div class="mini-trend">${trend.length ? trend.map((h) => `<i class="${h.status === "UP" ? "up" : "down"}"></i>`).join("") : `<span class="empty">Belum ada data.</span>`}</div>

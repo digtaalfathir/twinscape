@@ -25,15 +25,42 @@ function build() {
   panel = document.createElement("div");
   panel.className = "ssh-panel";
   panel.innerHTML =
-    '<div class="ssh-head"><span class="ssh-dot"></span><span class="ssh-title">Remote</span>' +
+    '<div class="ssh-head" id="sshHead"><span class="ssh-dot"></span><span class="ssh-title">Remote</span>' +
     '<div class="ssh-tabs" id="sshTabs"></div>' +
+    '<button class="ssh-btn" id="sshFull" title="Layar penuh">⛶</button>' +
     '<button class="ssh-btn" id="sshCloseAll" title="Tutup semua sesi">✕</button></div>' +
     '<div class="ssh-body" id="sshBody"></div>';
   document.body.appendChild(panel);
   tabsEl = panel.querySelector("#sshTabs");
   bodyEl = panel.querySelector("#sshBody");
   panel.querySelector("#sshCloseAll").onclick = () => sessions.slice().forEach(closeSession);
+  panel.querySelector("#sshFull").onclick = () => setFull(!panel.classList.contains("fullscreen"));
+  enableDrag(panel.querySelector("#sshHead"));
   window.addEventListener("resize", () => { if (active && active.type === "ssh") sendResize(active); });
+}
+
+function setFull(on) {
+  panel.classList.toggle("fullscreen", on);
+  panel.style.left = panel.style.top = panel.style.right = panel.style.bottom = "";   // biarkan CSS yang atur ukuran
+  const b = panel.querySelector("#sshFull"); if (b) { b.textContent = on ? "❐" : "⛶"; b.title = on ? "Kecilkan" : "Layar penuh"; }
+  requestAnimationFrame(() => { if (active && active.type === "ssh") sendResize(active); });   // noVNC auto-refit (scaleViewport)
+}
+
+function enableDrag(head) {                                  // geser panel via header (kecuali saat fullscreen / klik tombol-tab)
+  let d = null;
+  head.addEventListener("mousedown", (e) => {
+    if (panel.classList.contains("fullscreen") || e.target.closest(".ssh-btn, .ssh-tab, .ssh-tabs")) return;
+    const r = panel.getBoundingClientRect();
+    d = { dx: e.clientX - r.left, dy: e.clientY - r.top };
+    panel.style.left = r.left + "px"; panel.style.top = r.top + "px"; panel.style.right = "auto"; panel.style.bottom = "auto";
+    e.preventDefault();
+  });
+  window.addEventListener("mousemove", (e) => {
+    if (!d) return;
+    panel.style.left = Math.max(0, Math.min(window.innerWidth - 90, e.clientX - d.dx)) + "px";
+    panel.style.top = Math.max(0, Math.min(window.innerHeight - 40, e.clientY - d.dy)) + "px";
+  });
+  window.addEventListener("mouseup", () => { d = null; });
 }
 
 function newSession(type, ip, label) {
@@ -90,6 +117,7 @@ window.openVNC = function (ip, label) {
   const s = newSession("vnc", ip, label);
   setDot(s, "wait");
   activate(s);
+  setFull(true);                                            // VNC default layar penuh
   const proto = location.protocol === "https:" ? "wss" : "ws";
   import("/vendor/novnc/core/rfb.js").then(({ default: RFB }) => {
     if (!s.wrap.isConnected) return;                                    // sesi keburu ditutup

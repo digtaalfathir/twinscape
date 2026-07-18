@@ -36,9 +36,13 @@ function promptHidden(question) {
 }
 
 (async () => {
-  const username = (process.argv[2] || "").trim();
-  if (!username) { console.error("Pemakaian: node v2/adduser.js <username> [password]"); process.exit(1); }
-  let password = process.argv[3];
+  const args = process.argv.slice(2);
+  let role = null;
+  const rf = args.indexOf("--role");
+  if (rf >= 0) { role = (args[rf + 1] || "").trim(); args.splice(rf, 2); }   // --role <nama> (RBAC Fase 4)
+  const username = (args[0] || "").trim();
+  if (!username) { console.error("Pemakaian: node adduser.js <username> [password] [--role <role>]"); process.exit(1); }
+  let password = args[1];
   if (!password) {
     password = await promptHidden(`Password untuk "${username}": `);
     const confirm = await promptHidden("Ulangi password : ");
@@ -49,8 +53,11 @@ function promptHidden(question) {
   const users = auth.loadUsers();
   const { salt, hash } = auth.hashPassword(password);
   const idx = users.findIndex((u) => u.username === username);
-  if (idx >= 0) { users[idx] = { username, salt, hash }; console.log(`Akun "${username}" diperbarui.`); }
-  else { users.push({ username, salt, hash }); console.log(`Akun "${username}" ditambahkan.`); }
+  const finalRole = role || (idx >= 0 ? users[idx].role : undefined);      // update password tak menghapus role lama
+  const rec = { username, salt, hash };
+  if (finalRole) rec.role = finalRole;                                     // kosong → server pakai default 'viewer'
+  if (idx >= 0) { users[idx] = rec; console.log(`Akun "${username}" diperbarui${finalRole ? ` (role: ${finalRole})` : ""}.`); }
+  else { users.push(rec); console.log(`Akun "${username}" ditambahkan${finalRole ? ` (role: ${finalRole})` : ""}.`); }
   fs.writeFileSync(auth.USERS_FILE, JSON.stringify({ users }, null, 2) + "\n");
   console.log(`Total akun: ${users.length}  ·  ${auth.USERS_FILE}`);
   process.exit(0);
