@@ -1,12 +1,14 @@
-# Twinscape — Monitoring (v2)
+# Twinscape — Viewer (2D/3D + Remote)
 
-Viewer monitoring digital-twin (2D & 3D) untuk status hardware, terinspirasi Cisco Spaces.
-**Read-only**: v2 TIDAK meng-ping device — ia **konsumen** yang menerima data dari **WS server yang
-sudah running** (format `{ devices, timestamp }`), lalu memetakan status ke marker **berdasarkan IP**.
+Viewer digital-twin (2D & 3D) untuk **memonitor sekaligus mengoperasikan** hardware, terinspirasi Cisco Spaces.
+Data monitoring: v2 TIDAK meng-ping sendiri — ia **konsumen** yang menerima feed `{ devices, timestamp }` dari
+**WS producer (Twinscape Agent)** yang sudah running, lalu memetakan status ke marker **berdasarkan IP**.
+Untuk kontrol: klik device → **SSH/VNC in-browser** (dijembatani server, RBAC + audit).
 
 - Buka web → **langsung masuk monitoring 3D** (tanpa memilih).
-- Toggle **3D ↔ 2D**, tema **gelap/terang**, multi-lokasi & multi-lantai, cari device, filter, alert.
-- **Yang di-deploy hanya v2 (monitoring).** Builder = alat internal (folder `../builder/`), **tidak** ikut di server.
+- Toggle **3D ↔ 2D**, bahasa **EN/ID**, tema **gelap/terang**, multi-lokasi & multi-lantai, cari device, filter, alert.
+- **Remote** (opsional, `REMOTE_ENABLE=1`): SSH terminal + VNC desktop per device, multi-tab, gerbang **role (RBAC)** + **audit log**. Lihat `../docs/ROADMAP-remote.md`.
+- Sumber data = **Twinscape Agent** (`../legacy/agent.js`, PM2 `twinscape-agent`) — ping + WS producer. Builder = alat internal (`../builder/`).
 
 ---
 
@@ -15,7 +17,7 @@ sudah running** (format `{ devices, timestamp }`), lalu memetakan status ke mark
 ```
 twinscape/
   server.js              server statik + API + proxy WS  (port default 10102)
-  ecosystem.config.js    konfigurasi PM2 (hanya monitoring)
+  ecosystem.config.js    konfigurasi PM2 (viewer; agent terpisah di ../legacy/agent.js)
   locations.json         ← DAFTAR TEMPAT (kamu edit ini untuk nambah lokasi)
   deploy/
     nginx-pulse.conf.example   contoh reverse-proxy domain + WebSocket
@@ -69,17 +71,17 @@ nano twinscape/locations.json
 # 2b. buat akun login (WAJIB — tanpa akun tak ada yang bisa masuk)
 node twinscape/adduser.js <username>         # diminta password (lihat bagian "Login & akun")
 
-# 3. jalankan HANYA monitoring lewat PM2
-pm2 start twinscape/ecosystem.config.js      # atau: npm run pulse:start
+# 3. jalankan viewer lewat PM2
+pm2 start twinscape/ecosystem.config.js      # atau: npm run pulse:start (viewer saja)
 pm2 save                              # simpan daftar proses
 pm2 startup                           # ikuti perintah yang dicetak → auto-start saat reboot
 
 # cek
 pm2 status
-pm2 logs twinscape-v2                # atau: npm run pulse:logs
+pm2 logs twinscape                # atau: npm run pulse:logs
 ```
 
-Proses bernama **`twinscape-v2`**, listen di **127.0.0.1:10102** (lihat `ecosystem.config.js`).
+Proses bernama **`twinscape`**, listen di **127.0.0.1:10102** (lihat `ecosystem.config.js`).
 Builder & v1 **tidak** disertakan di config ini.
 
 **Perintah harian:**
@@ -90,7 +92,7 @@ npm run pulse:logs
 ```
 
 ### Ubah port / binding
-Edit `env` di `twinscape/ecosystem.config.js` lalu `pm2 restart twinscape-v2 --update-env`:
+Edit `env` di `twinscape/ecosystem.config.js` lalu `pm2 restart twinscape --update-env`:
 - `V2_PORT` — port internal (default 10102).
 - `V2_HOST` — `127.0.0.1` (hanya via nginx, disarankan) atau hapus untuk akses langsung dari LAN.
 - `MONITOR_WS` — sumber WS fallback bila `locations.json` kosong (opsional).
@@ -182,9 +184,9 @@ Dropdown lokasi muncul otomatis bila **>1 lokasi**; dropdown lantai muncul bila 
 - **Toggle 3D/2D** (kanan-atas) — pindah viewer, bawa lokasi/lantai/tema.
 - **Cari** device (nama/IP) → sorot + fly-to. **Filter** Semua/Up/Down.
 - **Klik device** → panel detail (latency, uptime, downtime, events, trend).
-- **Alert**: toast saat device turun/pulih; tombol 🔔 untuk suara (opsional).
-- **Share** 🔗 — salin deep-link read-only lokasi/lantai/view saat ini.
-- **Tema** gelap/terang (🌙/☀️), tersimpan otomatis.
+- **Alert**: toast saat device turun/pulih; suara opsional (di menu ☰).
+- **Remote**: klik device → **Open SSH / Open VNC** (kalau device remotable + role mengizinkan).
+- **Bahasa** EN/ID & **tema** gelap/terang — di menu ☰, tersimpan otomatis.
 - **Deep-link**: `?loc=<id>&floor=<id>&view=3d|2d`.
 - **Fallback**: perangkat tanpa WebGL diarahkan ke tampilan 2D.
 - *Panel "Zona" & pewarnaan zona ada tapi dinonaktifkan sementara — lihat `docs/ROADMAP-v2.md`.*
@@ -195,7 +197,7 @@ Dropdown lokasi muncul otomatis bila **>1 lokasi**; dropdown lantai muncul bila 
 
 | Gejala | Penyebab & solusi |
 |---|---|
-| Status "Disconnected", marker abu semua | WS upstream di `locations.json` salah/mati; cek `pm2 logs twinscape-v2`. Via domain: pastikan blok `/ws` nginx (upgrade header) terpasang. |
+| Status "Disconnected", marker abu semua | WS upstream di `locations.json` salah/mati; cek `pm2 logs twinscape`. Via domain: pastikan blok `/ws` nginx (upgrade header) terpasang. |
 | Denah kosong / "Belum ada scene.json" | File `scene3d`/`layout2d` di `locations.json` tak ada di `public/`. Taruh filenya lalu `pulse:restart`. |
 | Device online tapi marker tetap abu | IP tidak cocok — samakan `pin.ip`/`model.deviceIp` dengan `device.ip` dari WS. |
 | Model `.glb` tak muncul | File tak ada di `public/models/` atau path `url` di scene salah. |

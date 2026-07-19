@@ -1,0 +1,23 @@
+{
+  "_info": "Salin ke locations.json lalu isi. Daftar tempat yang dimonitor. Tiap tempat menerima data dari WS producer (Twinscape Agent / sumber lain yang sudah running) — bukan di-ping viewer. 'ws' boleh beda IP:port per tempat. 'scene3d'/'layout2d' = file denah (di public/assets/...). 'floors' opsional untuk multi-lantai. File ini TIDAK di-commit (berisi host internal) — template = locations.example.json.",
+  "locations": [
+    {
+      "id": "site-a",
+      "name": "Site A Warehouse",
+      "ws": "ws://10.0.0.10:10101/ws",
+      "scene3d": "/assets/SiteA/scene.json",
+      "layout2d": "/assets/SiteA/layout2d.json"
+    },
+    {
+      "id": "site-b",
+      "name": "Site B Factory",
+      "ws": "ws://10.0.0.20:10101/ws",
+      "scene3d": "/assets/SiteB/floor1.json",
+      "layout2d": "/assets/SiteB/floor1-2d.json",
+      "floors": [
+        { "id": "f1", "name": "Floor 1", "scene3d": "/assets/SiteB/floor1.json", "layout2d": "/assets/SiteB/floor1-2d.json" },
+        { "id": "f2", "name": "Floor 2", "scene3d": "/assets/SiteB/floor2.json", "layout2d": "/assets/SiteB/floor2-2d.json" }
+      ]
+    }
+  ]
+}

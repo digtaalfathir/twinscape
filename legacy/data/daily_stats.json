@@ -1,133 +1,133 @@
 {
-  "date": "2026-07-16",
+  "date": "2026-07-19",
   "devices": {
     "IOT NODE 001": {
       "upSeconds": 0,
-      "downSeconds": 3
+      "downSeconds": 33
     },
     "Printer M#5": {
       "upSeconds": 0,
-      "downSeconds": 3
+      "downSeconds": 33
     },
     "DCS MATERIAL INPUT F4": {
       "upSeconds": 0,
-      "downSeconds": 3
+      "downSeconds": 33
     },
     "DCS INJECTION RESIN1 F4": {
       "upSeconds": 0,
-      "downSeconds": 3
+      "downSeconds": 33
     },
     "DCS INJECTION RESIN2 F4": {
       "upSeconds": 0,
-      "downSeconds": 3
+      "downSeconds": 33
     },
     "DCS INJECTION RESIN3 F4": {
       "upSeconds": 0,
-      "downSeconds": 3
+      "downSeconds": 33
     },
     "PLC INJECTION F4": {
       "upSeconds": 0,
-      "downSeconds": 3
+      "downSeconds": 33
     },
     "DCS MIXING MATERIAL F4": {
       "upSeconds": 0,
-      "downSeconds": 3
+      "downSeconds": 33
     },
     "DCS PLAYMAKER F4": {
       "upSeconds": 0,
-      "downSeconds": 3
+      "downSeconds": 33
     },
     "DCS QI F4": {
       "upSeconds": 0,
-      "downSeconds": 3
+      "downSeconds": 33
     },
     "DCS REPAIR IN LINE F4": {
       "upSeconds": 0,
-      "downSeconds": 3
+      "downSeconds": 33
     },
     "DCS REPAIR OUT LINE F4": {
       "upSeconds": 0,
-      "downSeconds": 3
+      "downSeconds": 33
     },
     "DCS POLES F4": {
       "upSeconds": 0,
-      "downSeconds": 3
+      "downSeconds": 33
     },
     "DCS TASK FORCE F4": {
       "upSeconds": 0,
-      "downSeconds": 3
+      "downSeconds": 33
     },
     "DCS INJECTION 1300T F3": {
       "upSeconds": 0,
-      "downSeconds": 3
+      "downSeconds": 33
     },
     "DCS INJECTION1 1600T F3": {
       "upSeconds": 0,
-      "downSeconds": 3
+      "downSeconds": 33
     },
     "DCS INJECTION1 2500T F3": {
       "upSeconds": 0,
-      "downSeconds": 3
+      "downSeconds": 33
     },
     "DCS INJECTION2 2500T F3": {
       "upSeconds": 0,
-      "downSeconds": 3
+      "downSeconds": 33
     },
     "DCS INJECTION3 2500T F3": {
       "upSeconds": 0,
-      "downSeconds": 3
+      "downSeconds": 33
     },
     "DCS INJECTION2 1600T F3": {
       "upSeconds": 0,
-      "downSeconds": 3
+      "downSeconds": 33
     },
     "DCS INJECTION1 KRW": {
       "upSeconds": 0,
-      "downSeconds": 3
+      "downSeconds": 33
     },
     "DCS INJECTION2 KRW": {
       "upSeconds": 0,
-      "downSeconds": 3
+      "downSeconds": 33
     },
     "DCS INJECTION3 KRW": {
       "upSeconds": 0,
-      "downSeconds": 3
+      "downSeconds": 33
     },
     "DCS INJECTION4 KRW": {
       "upSeconds": 0,
-      "downSeconds": 3
+      "downSeconds": 33
     },
     "DCS INJECTION5 KRW": {
       "upSeconds": 0,
-      "downSeconds": 3
+      "downSeconds": 33
     },
     "DCS MATERIAL1 KRW": {
       "upSeconds": 0,
-      "downSeconds": 3
+      "downSeconds": 33
     },
     "DCS MATERIAL2 KRW": {
       "upSeconds": 0,
-      "downSeconds": 3
+      "downSeconds": 33
     },
     "PC SERVER KAMERA": {
       "upSeconds": 0,
-      "downSeconds": 3
+      "downSeconds": 33
     },
     "Camera QI KRW": {
       "upSeconds": 0,
-      "downSeconds": 3
+      "downSeconds": 33
     },
     "CAMERA AO KRW": {
       "upSeconds": 0,
-      "downSeconds": 3
+      "downSeconds": 33
     },
     "SERVER SUGITY": {
       "upSeconds": 0,
-      "downSeconds": 3
+      "downSeconds": 33
     },
     "SERVER CAMERA KRW": {
       "upSeconds": 0,
-      "downSeconds": 3
+      "downSeconds": 33
     }
   }
 }

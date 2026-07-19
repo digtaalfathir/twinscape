@@ -21,7 +21,7 @@ nano twinscape/ecosystem.config.js
 ```
 Lalu **restart dengan env di-refresh** (penting — restart biasa TIDAK memuat ulang env):
 ```bash
-pm2 delete twinscape-v2
+pm2 delete twinscape
 pm2 start twinscape/ecosystem.config.js
 pm2 save
 ```
@@ -68,7 +68,7 @@ node twinscape/adduser.js admin     # ketik password (tersembunyi). Tambah akun 
 pm2 start twinscape/ecosystem.config.js
 pm2 save
 pm2 startup                  # jalankan perintah sudo yang tercetak
-pm2 status                   # twinscape-v2 = online
+pm2 status                   # twinscape = online
 ```
 
 ### 6. Firewall (kalau ufw aktif)
@@ -87,12 +87,12 @@ Buka di browser: **`http://<IP-server>:10102`** → login pakai akun langkah 4.
 
 ## Perintah harian
 ```bash
-pm2 logs twinscape-v2           # lihat log (Ctrl-C keluar)
+pm2 logs twinscape           # lihat log (Ctrl-C keluar)
 npm run pulse:restart            # sesudah edit locations.json / taruh scene / tambah akun
 npm run pulse:stop
 pm2 status
 ```
-> Sesudah **edit `ecosystem.config.js`** (mis. ubah port/host), pakai `pm2 delete twinscape-v2 && pm2 start twinscape/ecosystem.config.js` agar env baru terbaca — bukan `restart` biasa.
+> Sesudah **edit `ecosystem.config.js`** (mis. ubah port/host), pakai `pm2 delete twinscape && pm2 start twinscape/ecosystem.config.js` agar env baru terbaca — bukan `restart` biasa.
 
 ---
 
@@ -108,6 +108,6 @@ pm2 status
 ---
 
 ## Besok: sambungkan domain
-1. Aktifkan lagi `V2_HOST: "127.0.0.1"` di `ecosystem.config.js` → `pm2 delete twinscape-v2 && pm2 start twinscape/ecosystem.config.js && pm2 save`.
+1. Aktifkan lagi `V2_HOST: "127.0.0.1"` di `ecosystem.config.js` → `pm2 delete twinscape && pm2 start twinscape/ecosystem.config.js && pm2 save`.
 2. Pasang `../twinscape/deploy/nginx-pulse.conf.example` (ganti `server_name`) → `sudo certbot --nginx -d <domain>` untuk HTTPS.
 3. Detail di `../twinscape/README.md` bagian **5**.

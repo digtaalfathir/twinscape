@@ -21,7 +21,7 @@ sudo systemctl stop nginx && sudo systemctl disable nginx
 
 # (disarankan) kunci app hanya untuk lokal + tunnel
 nano twinscape/ecosystem.config.js         # aktifkan lagi: V2_HOST: "127.0.0.1"
-pm2 delete twinscape-v2 && pm2 start twinscape/ecosystem.config.js && pm2 save
+pm2 delete twinscape && pm2 start twinscape/ecosystem.config.js && pm2 save
 
 # pastikan app hidup di :10102
 curl -I http://localhost:10102/login    # harus 200

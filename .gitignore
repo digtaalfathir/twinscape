@@ -25,6 +25,9 @@ twinscape/.env
 # Twinscape — peta remote per-device (host/username internal). Template = twinscape/remotes.example.json
 twinscape/remotes.json
 
+# Twinscape — daftar lokasi (host WS internal). Template = twinscape/locations.example.json
+twinscape/locations.json
+
 # v1 classic — akun & rahasia sesi (JANGAN di-commit)
 legacy/data/users.json
 legacy/data/.dashboard-secret

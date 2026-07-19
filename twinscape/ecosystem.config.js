@@ -13,7 +13,7 @@ const path = require("path");
 module.exports = {
   apps: [
     {
-      name: "twinscape-v2",
+      name: "twinscape",
       script: "server.js",
       cwd: __dirname,                 // = folder v2/ → server.js, locations.json, public/ ada di sini
       instances: 1,
