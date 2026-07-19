@@ -110,6 +110,14 @@
     root.querySelectorAll("[data-i18n-title]").forEach(function (el) { var v = tr(el.getAttribute("data-i18n-title")); if (v != null) el.setAttribute("title", v); });
   };
 
-  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", function () { window.applyI18n(); });
-  else window.applyI18n();
+  window.applyBrand = function () {                       // nama tampilan (window.BRAND dari /brand.js); default → biarkan
+    var b = window.BRAND;
+    if (!b || b === "Twinscape") return;
+    document.querySelectorAll("[data-brand]").forEach(function (el) { el.textContent = b; });
+    if (document.title) document.title = document.title.replace(/Twinscape/g, b);
+  };
+
+  function onReady() { window.applyI18n(); window.applyBrand(); }
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", onReady);
+  else onReady();
 })();

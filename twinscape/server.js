@@ -194,6 +194,10 @@ app.post("/api/logout", (_req, res) => {
   res.json({ ok: true });
 });
 
+// nama tampilan (opsional; default "Twinscape"). Publik agar login pun ikut.
+const BRAND = process.env.BRAND_NAME || "Twinscape";
+app.get("/brand.js", (_req, res) => { res.type("application/javascript").send(`window.BRAND=${JSON.stringify(BRAND)};`); });
+
 // ---- mulai sini WAJIB login ----
 app.use(auth.middleware);
 
