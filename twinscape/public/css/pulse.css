@@ -174,6 +174,8 @@ body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--t
   background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%238b9ab4' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
   background-repeat:no-repeat;background-position:right 9px center}
 .factory-nav select:hover,.factory-nav select:focus{border-color:var(--accent)}
+.factory-nav .fn-floor{display:flex;align-items:center;gap:9px}
+.factory-nav .fn-sep{width:1px;height:20px;background:var(--border)}
 
 /* ---------- floating 3D labels (CSS2D) ---------- */
 .mk3d-label{font-family:'Inter',sans-serif;font-size:11px;font-weight:600;color:var(--text-bright);

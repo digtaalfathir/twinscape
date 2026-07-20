@@ -43,26 +43,45 @@ let modelsPending = 0, sceneReadyFired = false, readyTimer = null;   // #1: spla
 let wsRetry = 2000, lastDataAt = 0;   // #2 reconnect backoff+jitter · #3 deteksi data basi
 const STALE_MS = 25000;               // data dianggap "basi" bila tak ada payload selama ini
 let lite = false, frameMs = 0, lastFrame = 0;   // #4 mode ringan (grafis hemat GPU) + cap FPS
+let baseDPR = 1, curDPR = 1, dprSmooth = 16.7, dprCooldown = 0;   // perf: resolusi adaptif (jaga frame-time stabil)
 let fpsWarm = 0, fpsStart = 0, fpsFrames = 0, fpsLast = 0, fpsDone = false;   // pengukur FPS → saran Ringan
 let camAnim = null, savedCam = null, lastT = 0;   // klik→zoom ke titik, tutup→balik
 const modelCache = {};      // A2: url -> Promise<gltf.scene> (load-once, lalu clone)
 
-// Fase 2 kawasan — grup objek per factory + fokus/dim (bounds dihitung dari objek ber-tag)
-let districtFactories = [], facById = {}, focusedFactory = "";
-const facDimTarget = {}, facDimCur = {};   // id -> 1 (terang) .. 0.16 (redup); dianimasikan di animate()
-function tagObj(obj, fid) {   // catat obj ke grup factory + perluas bounds
+// Fase 2/3 kawasan — grup objek per factory (dan per-lantai) + fokus/dim (bounds dari objek ber-tag)
+// factory = { id, name, floors:[{id,name,y}], box:Box3, groups: { "<floorId|''>": {objs:[], cur:1, target:1} } }
+let districtFactories = [], facById = {}, focusedFactory = "", activeFloorId = "";
+function facGroup(f, floorId) {   // ambil/buat grup (factory, lantai) — key "" = objek factory tanpa lantai (selubung/tanah)
+  const key = floorId || "";
+  return f.groups[key] || (f.groups[key] = { objs: [], cur: 1, target: 1 });
+}
+function tagObj(obj, fid, floorId) {   // catat obj ke grup (factory,lantai) + perluas bounds factory
   if (!fid || !facById[fid] || !obj) return;
   obj.userData.factory = fid;
-  facById[fid].objs.push(obj);
+  facGroup(facById[fid], floorId).objs.push(obj);
   facById[fid].box.expandByObject(obj);
 }
-function tagDevice(ip, fid, bc) {   // beacon ikut grup: ball/ring/stem diredupkan, halo/label lewat dimF
+function tagDevice(ip, fid, floorId) {   // beacon TIDAK masuk grup struktur — diredupkan via renderBeacon (dimF), hindari 2 penulis opacity
   if (!fid || !facById[fid]) return;
-  const o = deviceObjs[ip]; if (o) o.factory = fid;
-  [bc.ball, bc.ring, bc.stem].forEach((m) => m && tagObj(m, fid));
+  const o = deviceObjs[ip]; if (o) { o.factory = fid; o.floor = floorId || ""; }
 }
-function applyFactoryDim(f, op) {   // skala opacity relatif thd nilai asli (jaga halo/sprite tetap proporsional)
-  f.objs.forEach((obj) => obj.traverse((o) => {
+function inScope(o) {   // Fase 4: device masuk konteks aktif? (All=semua; fokus=factory itu, opsional lantai aktif)
+  if (!focusedFactory) return true;
+  if (o.factory !== focusedFactory) return false;
+  return !activeFloorId || !o.floor || o.floor === activeFloorId;
+}
+// SATU penulis untuk ball/ring/stem/label = gabungan (filter status × redup konteks). Halo diurus di animate().
+function renderBeacon(o) {
+  const op = o.dimmed ? 0.1 : (o.dimF ?? 1);
+  [o.bc.ball, o.bc.ring].forEach((m) => { m.material.transparent = true; m.material.opacity = op; });
+  if (o.bc.stem) { o.bc.stem.material.transparent = true; o.bc.stem.material.opacity = op; }
+  if (o.labelEl) o.labelEl.style.opacity = o.dimmed ? "0.1" : ((o.dimF ?? 1) < 0.6 ? "0.28" : "");
+}
+function staticize(obj) {   // perf: objek statis (lantai/tembok/model/teks) → matriks tak dihitung ulang tiap frame. Aman: tak pernah bergerak; redup hanya ubah material, bukan transform.
+  obj.traverse((o) => { o.updateMatrix(); o.matrixAutoUpdate = false; });
+}
+function applyGroupDim(g, op) {   // skala opacity relatif thd nilai asli (jaga halo/sprite tetap proporsional)
+  g.objs.forEach((obj) => obj.traverse((o) => {
     if (!o.material) return;
     (Array.isArray(o.material) ? o.material : [o.material]).forEach((m) => {
       if (!m) return;
@@ -71,6 +90,44 @@ function applyFactoryDim(f, op) {   // skala opacity relatif thd nilai asli (jag
       m.opacity = m.userData._op0 * op;
     });
   }));
+}
+// satu sumber kebenaran: target redup tiap grup + tiap device dari (focusedFactory, activeFloorId)
+function applyDimState() {
+  districtFactories.forEach((f) => {
+    const facOn = !focusedFactory || f.id === focusedFactory;
+    for (const key in f.groups) {
+      let op = 1;
+      if (!facOn) op = 0.16;                                                   // factory lain: buram
+      else if (focusedFactory && activeFloorId && key && key !== activeFloorId) op = 0.28;   // lantai non-aktif di factory fokus
+      f.groups[key].target = op;
+    }
+  });
+  for (const ip in deviceObjs) {
+    const o = deviceObjs[ip];
+    if (!o.factory) { o.dimF = 1; renderBeacon(o); continue; }                  // beacon kawasan (jalan) selalu tampil
+    const facOn = !focusedFactory || o.factory === focusedFactory;
+    const floorOn = !focusedFactory || !activeFloorId || !o.floor || o.floor === activeFloorId;
+    o.dimF = !facOn ? 0.2 : (floorOn ? 1 : 0.3);
+    renderBeacon(o);
+  }
+  updateSummary();   // Fase 4: angka panel ikut konteks (All ⇄ fokus)
+  updateHint();
+}
+let locSubBase = "", hintBase = null;   // subtitle & hint dasar (dipulihkan saat kembali ke All)
+function updateHint() {   // Fase 4: subtitle panel + hint bawah menyesuaikan All vs fokus
+  const sub = document.getElementById("locSub");
+  if (sub) {
+    if (focusedFactory) {
+      const f = facById[focusedFactory];
+      const fl = activeFloorId && (f.floors || []).find((x) => x.id === activeFloorId);
+      sub.textContent = (f.name || focusedFactory) + (fl ? " · " + (fl.name || fl.id) : "");
+    } else sub.textContent = locSubBase;
+  }
+  const hint = document.querySelector(".hint");
+  if (hint) {
+    if (hintBase === null) hintBase = hint.innerHTML;
+    hint.innerHTML = focusedFactory ? t("hint_focus", "Press <kbd>Esc</kbd> or pick <b>All</b> to zoom out") : hintBase;
+  }
 }
 
 const STATUS_HEX = { UP: 0x10b981, DOWN: 0xef4444 };
@@ -205,7 +262,9 @@ function initThree() {
   camera.position.set(28, 24, 32);
 
   renderer = new THREE.WebGLRenderer({ canvas, antialias: !lite, powerPreference: "high-performance" });
-  renderer.setPixelRatio(lite ? 1 : Math.min(window.devicePixelRatio, 2));   // #4: pixelRatio 1 di mode ringan
+  baseDPR = lite ? 1 : Math.min(window.devicePixelRatio, 1.5);   // #4/perf: cap 1.5 (turun dari 2) → lebih sedikit fragment, lebih smooth
+  curDPR = baseDPR;
+  renderer.setPixelRatio(curDPR);
   renderer.setSize(w, h);
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
   renderer.localClippingEnabled = true;   // aktifkan clip per-material (motong model nembus lantai)
@@ -267,6 +326,7 @@ function animate(now) {
   requestAnimationFrame(animate);
   if (glLost || renderPaused) return;   // jangan render saat context hilang / tab tersembunyi
   if (frameMs && now && now - lastFrame < frameMs) return;   // #4: batasi FPS di mode ringan
+  const frameDt = (now && lastFrame) ? now - lastFrame : 16.7;   // ms antar-frame yg benar-benar dirender
   lastFrame = now || 0;
   const t = clock ? clock.getElapsedTime() : 0;
   const dt = Math.min(0.1, t - lastT); lastT = t;
@@ -283,11 +343,13 @@ function animate(now) {
       o.bc.halo.material.opacity = 0.1 * df;
     }
   }
-  for (const f of districtFactories) {   // Fase 2: animasikan redup grup factory menuju target
-    const cur = facDimCur[f.id], tgt = facDimTarget[f.id];
-    if (Math.abs(cur - tgt) > 0.004) {
-      facDimCur[f.id] = cur + (tgt - cur) * Math.min(1, dt * 6);
-      applyFactoryDim(f, facDimCur[f.id]);
+  for (const f of districtFactories) {   // Fase 2/3: animasikan redup tiap grup (factory,lantai) menuju target
+    for (const key in f.groups) {
+      const g = f.groups[key];
+      if (Math.abs(g.cur - g.target) > 0.004) {
+        g.cur += (g.target - g.cur) * Math.min(1, dt * 6);
+        applyGroupDim(g, g.cur);
+      }
     }
   }
   if (camAnim) {
@@ -302,7 +364,22 @@ function animate(now) {
   }
   renderer.render(scene, camera);
   labelRenderer.render(scene, camera);
+  adaptResolution(frameDt);              // perf: auto turun/naik resolusi supaya frame-time tetap halus
   measureFps(now);                       // saran mode Ringan bila FPS nyata rendah (mode Auto saja)
+}
+// Resolusi adaptif — kalau frame berat, turunkan pixelRatio (gambar sedikit lebih lembut tapi lancar);
+// kalau lega, naikkan lagi sampai baseDPR. Menjaga kelancaran di hardware apa pun tanpa perlu diatur manual.
+// ponytail: heuristik EMA sederhana + cooldown; kalau butuh lebih presisi baru pakai kurva/pengukuran GPU.
+function adaptResolution(frameDt) {
+  if (frameDt <= 0 || frameDt > 500) return;                // abaikan lonjakan (tab kembali, hitch besar)
+  dprSmooth += (frameDt - dprSmooth) * 0.1;                 // rata-rata bergerak
+  if (dprCooldown > 0) { dprCooldown--; return; }           // beri jeda tiap ganti resolusi (hindari osilasi)
+  const budget = frameMs || 16.7;                           // target: pakai cap FPS bila ada, else ~60fps
+  if (dprSmooth > budget * 1.35 && curDPR > 0.6) {          // berat → turunkan
+    curDPR = Math.max(0.6, curDPR - 0.15); renderer.setPixelRatio(curDPR); dprCooldown = 45;
+  } else if (dprSmooth < budget * 1.05 && curDPR < baseDPR) {   // lega → naikkan bertahap
+    curDPR = Math.min(baseDPR, curDPR + 0.1); renderer.setPixelRatio(curDPR); dprCooldown = 90;
+  }
 }
 function onResize() {
   const w = stage.clientWidth, h = stage.clientHeight;
@@ -316,7 +393,7 @@ function onResize() {
 async function loadScene() {
   const forced = new URLSearchParams(location.search).get("scene");
   const url = forced || (activeFloor && activeFloor.scene3d) || (activeLoc && activeLoc.scene3d) || "/scene.json";
-  const setSub = (t) => { const s = $("locSub"); if (s) s.textContent = t; };
+  const setSub = (t) => { locSubBase = t; const s = $("locSub"); if (s && !focusedFactory) s.textContent = t; };
   const tryLoad = async (u) => {
     const res = await fetch(u, { cache: "no-store" });
     const data = JSON.parse(await res.text());   // throws if it's the SPA-fallback HTML
@@ -386,58 +463,75 @@ function buildFactorySelector() {
   if (!nav) {
     nav = document.createElement("div");
     nav.id = "factoryNav"; nav.className = "factory-nav";
-    nav.innerHTML = `<span class="fn-lbl">${t("factory", "Factory")}</span><select id="factorySel"></select>`;
+    nav.innerHTML =
+      `<span class="fn-lbl">${t("factory", "Factory")}</span><select id="factorySel"></select>` +
+      `<span class="fn-floor" style="display:none"><span class="fn-sep"></span><span class="fn-lbl">${t("floor", "Floor")}</span><select id="floorSel"></select></span>`;
     stage.appendChild(nav);
-    nav.querySelector("select").addEventListener("change", (e) => selectFactory(e.target.value));
+    nav.querySelector("#factorySel").addEventListener("change", (e) => selectFactory(e.target.value));
+    nav.querySelector("#floorSel").addEventListener("change", (e) => selectFloor(e.target.value));
   }
-  const sel = nav.querySelector("select");
+  const sel = document.getElementById("factorySel");
   sel.innerHTML = `<option value="">${t("all_factories", "All")}</option>` +
     districtFactories.map((f) => `<option value="${f.id}">${(f.name || f.id).replace(/</g, "&lt;")}</option>`).join("");
   sel.value = focusedFactory;
+  updateFloorSelector();
+}
+function updateFloorSelector() {   // Fase 3: sub-selektor lantai — hanya bila factory fokus punya ≥2 lantai
+  const wrap = document.querySelector("#factoryNav .fn-floor");
+  const fs = document.getElementById("floorSel");
+  const floors = (facById[focusedFactory] && facById[focusedFactory].floors) || [];
+  if (!focusedFactory || floors.length < 2) { if (wrap) wrap.style.display = "none"; return; }
+  wrap.style.display = "";
+  fs.innerHTML = `<option value="">${t("all_floors", "All")}</option>` +
+    floors.map((fl) => `<option value="${fl.id}">${(fl.name || fl.id).replace(/</g, "&lt;")}</option>`).join("");
+  fs.value = activeFloorId;
+}
+function setDeepLink() {
+  const u = new URL(location.href);
+  focusedFactory ? u.searchParams.set("factory", focusedFactory) : u.searchParams.delete("factory");
+  activeFloorId ? u.searchParams.set("floor", activeFloorId) : u.searchParams.delete("floor");
+  history.replaceState(null, "", u);
 }
 function selectFactory(id) {
   focusedFactory = id && facById[id] ? id : "";
+  activeFloorId = "";   // ganti factory → default semua lantai
   const sel = document.getElementById("factorySel"); if (sel) sel.value = focusedFactory;
-  const u = new URL(location.href);
-  if (focusedFactory) u.searchParams.set("factory", focusedFactory); else u.searchParams.delete("factory");
-  history.replaceState(null, "", u);
-  districtFactories.forEach((f) => { facDimTarget[f.id] = (!focusedFactory || f.id === focusedFactory) ? 1 : 0.16; });
-  for (const ip in deviceObjs) {
-    const o = deviceObjs[ip]; if (!o.factory) continue;   // beacon kawasan (jalan/gerbang) selalu tampil
-    const on = !focusedFactory || o.factory === focusedFactory;
-    o.dimF = on ? 1 : 0.2;
-    if (o.labelEl) o.labelEl.style.opacity = on ? "" : "0.25";
-  }
+  updateFloorSelector();
+  applyDimState();
+  setDeepLink();
   if (!focusedFactory) frameBox(new THREE.Box3().setFromObject(built), 1.4);   // All = fit seluruh kawasan
   else frameBox(facById[focusedFactory].box, 1.5);
 }
-function syncFactoryDimFor(fid) {   // objek async (model .glb) selesai → samakan redup dgn fokus aktif (tanpa gerakkan kamera)
-  if (!focusedFactory || !fid || !facById[fid]) return;
-  applyFactoryDim(facById[fid], facDimCur[fid]);
-  const on = fid === focusedFactory;
-  for (const ip in deviceObjs) {
-    const o = deviceObjs[ip]; if (o.factory !== fid) continue;
-    o.dimF = on ? 1 : 0.2;
-    if (o.labelEl) o.labelEl.style.opacity = on ? "" : "0.25";
-  }
+function selectFloor(floorId) {   // Fase 3: pilih lantai aktif (bright), lainnya redup — tanpa gerakkan kamera
+  const floors = (facById[focusedFactory] && facById[focusedFactory].floors) || [];
+  activeFloorId = floors.some((fl) => fl.id === floorId) ? floorId : "";
+  const fs = document.getElementById("floorSel"); if (fs) fs.value = activeFloorId;
+  applyDimState();
+  setDeepLink();
+}
+function syncFactoryDimFor(fid) {   // objek async (model .glb) selesai → samakan redup dgn fokus/lantai aktif (tanpa gerakkan kamera)
+  const f = facById[fid]; if (!f) return;
+  applyDimState();   // pastikan target grup (termasuk yg baru) benar
+  for (const key in f.groups) { const g = f.groups[key]; g.cur = g.target; applyGroupDim(g, g.cur); }   // snap objek baru agar tak berkedip
 }
 
 function buildFromScene(s) {
   clearBuilt();
   // nama panel = name lokasi (di-set resolveLocation), BUKAN nama scene (terlalu teknis).
 
-  districtFactories = (s.factories || []).map((f) => ({ id: f.id, name: f.name, floors: f.floors || [], objs: [], box: new THREE.Box3() }));
-  facById = {}; focusedFactory = "";
-  districtFactories.forEach((f) => { facById[f.id] = f; facDimTarget[f.id] = 1; facDimCur[f.id] = 1; });
+  districtFactories = (s.factories || []).map((f) => ({ id: f.id, name: f.name, floors: f.floors || [], box: new THREE.Box3(), groups: {} }));
+  facById = {}; focusedFactory = ""; activeFloorId = "";
+  districtFactories.forEach((f) => { facById[f.id] = f; });
 
   if (s.lighting) applyLighting(s.lighting);
 
-  if (s.walls && s.walls.length) built.add(buildWallsMerged(s.walls));   // A2: 1 mesh per warna, di-grup per factory
+  if (s.walls && s.walls.length) { const wg = buildWallsMerged(s.walls); staticize(wg); built.add(wg); }   // A2: 1 mesh per warna, di-grup per factory
   let floorTop = null;
   zones3d = [];
   (s.floors || []).forEach((d, i) => {
     const fm = buildFloor(d);
-    tagObj(fm, d.factory);
+    tagObj(fm, d.factory, d.floor);
+    staticize(fm);
     built.add(fm);
     zones3d.push({                             // E2/E7: tiap lantai = 1 zona
       name: d.name || d.label || `Zona ${i + 1}`,
@@ -448,7 +542,7 @@ function buildFromScene(s) {
     if (floorTop === null || t > floorTop) floorTop = t;
   });
   modelClip.constant = floorTop === null ? 1e6 : -floorTop;   // ada lantai → potong model di garis lantai
-  (s.texts || []).forEach((d) => { const sp = makeTextSprite(d); tagObj(sp, d.factory); built.add(sp); });
+  (s.texts || []).forEach((d) => { const sp = makeTextSprite(d); tagObj(sp, d.factory, d.floor); staticize(sp); built.add(sp); });
   (s.pins || []).forEach((d) => addPinDevice(d));
   sceneReadyFired = false;
   modelsPending = (s.models || []).length;
@@ -469,8 +563,9 @@ function buildFromScene(s) {
   if (modelsPending === 0) fireSceneReady();   // tak ada model → langsung siap (splash ditutup)
 
   buildFactorySelector();
-  const wantFac = new URLSearchParams(location.search).get("factory");
-  if (wantFac && facById[wantFac]) selectFactory(wantFac);   // deep-link ?factory=
+  const params = new URLSearchParams(location.search);
+  const wantFac = params.get("factory"), wantFloor = params.get("floor");
+  if (wantFac && facById[wantFac]) { selectFactory(wantFac); if (wantFloor) selectFloor(wantFloor); }   // deep-link ?factory=&floor=
 }
 
 function applyLighting(L) {
@@ -492,17 +587,18 @@ function applyLighting(L) {
 // (Tembok tidak perlu di-raycast di viewer, jadi aman digabung.)
 function buildWallsMerged(walls) {
   const group = new THREE.Group();
-  const byFac = {};   // factory id ("" = kawasan) → dinding; merge per factory agar bisa diredupkan terpisah
-  walls.forEach((d) => { const f = d.factory || ""; (byFac[f] = byFac[f] || []).push(d); });
-  Object.keys(byFac).forEach((fid) => {
+  const bySet = {};   // "factory|floor" → dinding; merge per (factory,lantai) agar bisa diredupkan terpisah
+  walls.forEach((d) => { const k = (d.factory || "") + "|" + (d.floor || ""); (bySet[k] = bySet[k] || []).push(d); });
+  Object.keys(bySet).forEach((k) => {
+    const [fid, floorId] = k.split("|");
     const byColor = {};
-    byFac[fid].forEach((d) => collectWallGeoms(d, byColor));
+    bySet[k].forEach((d) => collectWallGeoms(d, byColor));
     for (const hex in byColor) {
       const merged = BufferGeometryUtils.mergeGeometries(byColor[hex], false);
       byColor[hex].forEach((g) => g.dispose());
       if (!merged) continue;
       const mesh = new THREE.Mesh(merged, new THREE.MeshStandardMaterial({ color: parseInt(hex), roughness: 0.6, metalness: 0.12, envMapIntensity: 0.9 }));
-      tagObj(mesh, fid);
+      tagObj(mesh, fid, floorId);
       group.add(mesh);
     }
   });
@@ -527,7 +623,7 @@ function collectWallGeoms(d, byColor) {
       const mid = (s + e2) / 2;
       const geo = new THREE.BoxGeometry(len, y1 - y0, T);
       eu.set(0, ang, 0); q.setFromEuler(eu);
-      geo.applyMatrix4(new THREE.Matrix4().compose(new THREE.Vector3(a[0] + ux * mid, (y0 + y1) / 2, a[1] + uz * mid), q, one));
+      geo.applyMatrix4(new THREE.Matrix4().compose(new THREE.Vector3(a[0] + ux * mid, (d.baseY || 0) + (y0 + y1) / 2, a[1] + uz * mid), q, one));   // baseY: dinding lantai bertumpuk
       arr.push(geo);
     };
     const ops = openings.filter((o) => o.seg === i).sort((p, r) => p.dist - r.dist);
@@ -668,10 +764,10 @@ function registerDevice(ip, name, bc) {
 
 function addPinDevice(d) {
   const bc = makeBeacon(2.35, true);
-  bc.group.position.set(d.x, 0, d.z);
+  bc.group.position.set(d.x, d.y || 0, d.z);   // y: pin lantai bertumpuk
   built.add(bc.group);
   registerDevice(d.ip, d.label || d.ip, bc);
-  tagDevice(d.ip, d.factory, bc);
+  tagDevice(d.ip, d.factory, d.floor);
 }
 
 // A2 — load tiap .glb SEKALI, lalu clone untuk tiap instance (hemat parse + share buffer GPU).
@@ -698,7 +794,8 @@ function addModel(d) {
       }
     });
     built.add(root);
-    tagObj(root, d.factory);
+    tagObj(root, d.factory, d.floor);
+    staticize(root);   // model statis → hemat matriks per-frame (beacon-nya tetap dinamis, ditambah terpisah)
     if (d.deviceIp) {
       const box = new THREE.Box3().setFromObject(root);
       const topY = isFinite(box.max.y) ? box.max.y : (d.position?.[1] || 0) + 2;
@@ -706,7 +803,7 @@ function addModel(d) {
       bc.group.position.set(d.position?.[0] || 0, 0, d.position?.[2] || 0);
       built.add(bc.group);
       registerDevice(d.deviceIp, d.name || d.deviceIp, bc);
-      tagDevice(d.deviceIp, d.factory, bc);
+      tagDevice(d.deviceIp, d.factory, d.floor);
       if (Object.keys(deviceByIp).length) applyStatus(Object.values(deviceByIp));
       updateSummary();   // model .glb load async → refresh hitungan saat beacon-nya siap
     }
@@ -745,12 +842,8 @@ function beaconMatches(o) {
 function applyFilter() {
   for (const ip in deviceObjs) {
     const o = deviceObjs[ip];
-    const vis = beaconMatches(o);
-    o.dimmed = !vis;
-    const op = vis ? 1 : 0.12;
-    [o.bc.ball, o.bc.ring].forEach((m) => { m.material.transparent = true; m.material.opacity = op; });
-    if (o.bc.stem) { o.bc.stem.material.transparent = true; o.bc.stem.material.opacity = op; }
-    if (o.labelEl) o.labelEl.style.opacity = vis ? "" : "0.12";
+    o.dimmed = !beaconMatches(o);   // filter status; renderBeacon gabungkan dgn redup konteks (dimF)
+    renderBeacon(o);
   }
 }
 function sevIcon(sev) { return sev === "CRITICAL" || sev === "HIGH" ? "▲" : sev === "MEDIUM" ? "◆" : "•"; }
@@ -763,7 +856,7 @@ window.pulseFilter = (mode) => { filterMode = mode || "all"; applyFilter(); };
 // Ringkasan dihitung dari PIN DI SCENE (deviceObjs), bukan semua device yang dikirim WS.
 // Jadi kalau scene punya 2 pin tapi WS kirim 3 device, total tetap 2.
 function updateSummary() {
-  const ips = Object.keys(deviceObjs);
+  const ips = Object.keys(deviceObjs).filter((ip) => inScope(deviceObjs[ip]));   // Fase 4: hanya device dalam konteks aktif
   const total = ips.length;
   let up = 0, down = 0, unknown = 0;
   ips.forEach((ip) => {
@@ -799,6 +892,8 @@ function zoneAt(x, z) {
   return best;
 }
 function updateZones() {
+  // Kawasan: panel zona (occupancy by-XZ) tak cocok utk lantai bertumpuk (l1/l2 satu XZ) → sembunyikan; ringkasan ber-scope jadi sumber angka. ponytail: per-floor zone mapping kalau memang dibutuhkan.
+  if (districtFactories.length) { const p = $("zonePanel"); if (p) { p.style.display = "none"; p.innerHTML = ""; } return; }
   if (!zones3d.length) { const p = $("zonePanel"); if (p) { p.style.display = "none"; p.innerHTML = ""; } return; }
   zones3d.forEach((z) => { z.up = 0; z.down = 0; z.total = 0; });
   for (const ip in deviceObjs) {
@@ -856,7 +951,11 @@ function bindInteraction() {
 
   const rv = $("resetView"); if (rv) rv.onclick = () => { camera.position.set(28, 24, 32); controls.target.set(0, 1, 0); controls.update(); };
   const tl = $("toggleLabels"); if (tl) tl.onclick = () => { labelsVisible = !labelsVisible; labelEls.forEach((el) => (el.style.display = labelsVisible ? "" : "none")); };
-  document.addEventListener("keydown", (e) => { if (e.key === "Escape") closeDetail(); });
+  document.addEventListener("keydown", (e) => {   // Esc: tutup detail dulu; kalau tak ada & sedang fokus factory → kembali ke All
+    if (e.key !== "Escape") return;
+    if (selectedIp) { closeDetail(); return; }
+    if (focusedFactory) selectFactory("");
+  });
 }
 function pick(e) {
   const r = canvas.getBoundingClientRect();

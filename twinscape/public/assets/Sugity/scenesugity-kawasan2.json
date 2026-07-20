@@ -1,0 +1,2709 @@
+{
+ "version": 1,
+ "units": "m",
+ "factories": [
+  {
+   "id": "fa",
+   "name": "Factory A"
+  },
+  {
+   "id": "fb",
+   "name": "Factory B",
+   "floors": [
+    {
+     "id": "l1",
+     "name": "Lantai 1",
+     "y": 0
+    },
+    {
+     "id": "l2",
+     "name": "Lantai 2",
+     "y": 5
+    }
+   ]
+  }
+ ],
+ "walls": [],
+ "floors": [
+  {
+   "x": 22.5,
+   "z": 0,
+   "w": 60,
+   "d": 5,
+   "order": -3,
+   "type": "custom",
+   "color": "#20242c"
+  },
+  {
+   "x": 0,
+   "z": 0,
+   "w": 2,
+   "d": 20,
+   "type": "custom",
+   "color": "#ffffff",
+   "order": 1,
+   "elev": 0,
+   "factory": "fa",
+   "floor": ""
+  },
+  {
+   "x": 0,
+   "z": 0,
+   "w": 30,
+   "d": 2,
+   "type": "custom",
+   "color": "#ffffff",
+   "order": 2,
+   "elev": 0,
+   "factory": "fa",
+   "floor": ""
+  },
+  {
+   "x": 0,
+   "z": 0,
+   "w": 1,
+   "d": 20,
+   "type": "green",
+   "color": "#ffffff",
+   "order": 3,
+   "elev": 0,
+   "factory": "fa",
+   "floor": ""
+  },
+  {
+   "x": 0,
+   "z": 0,
+   "w": 30,
+   "d": 1,
+   "type": "green",
+   "color": "#ffffff",
+   "order": 4,
+   "elev": 0,
+   "factory": "fa",
+   "floor": ""
+  },
+  {
+   "x": 0,
+   "z": 0,
+   "w": 30,
+   "d": 20,
+   "type": "concrete",
+   "color": "#3a3f47",
+   "order": -1,
+   "elev": 0,
+   "factory": "fa",
+   "floor": ""
+  },
+  {
+   "x": 45,
+   "z": 0,
+   "w": 2,
+   "d": 20,
+   "type": "green",
+   "color": "#3a3f47",
+   "order": 1,
+   "elev": 0,
+   "factory": "fb",
+   "floor": "l1"
+  },
+  {
+   "x": 45,
+   "z": 0,
+   "w": 3,
+   "d": 20,
+   "type": "custom",
+   "color": "#ffffff",
+   "order": -1,
+   "elev": 0,
+   "factory": "fb",
+   "floor": "l1"
+  },
+  {
+   "x": 45,
+   "z": 0,
+   "w": 30,
+   "d": 20,
+   "type": "concrete",
+   "color": "#3a3f47",
+   "order": -2,
+   "elev": 0,
+   "factory": "fb",
+   "floor": "l1"
+  },
+  {
+   "x": 47,
+   "z": 0,
+   "w": 2,
+   "d": 20,
+   "type": "green",
+   "color": "#3a3f47",
+   "order": 1,
+   "elev": 5,
+   "factory": "fb",
+   "floor": "l2"
+  },
+  {
+   "x": 39,
+   "z": 8,
+   "w": 14,
+   "d": 2,
+   "type": "green",
+   "color": "#3a3f47",
+   "order": 2,
+   "elev": 5,
+   "factory": "fb",
+   "floor": "l2"
+  },
+  {
+   "x": 33,
+   "z": 0,
+   "w": 2,
+   "d": 18,
+   "type": "green",
+   "color": "#3a3f47",
+   "order": 3,
+   "elev": 5,
+   "factory": "fb",
+   "floor": "l2"
+  },
+  {
+   "x": 39,
+   "z": -8,
+   "w": 14,
+   "d": 2,
+   "type": "green",
+   "color": "#3a3f47",
+   "order": 4,
+   "elev": 5,
+   "factory": "fb",
+   "floor": "l2"
+  },
+  {
+   "x": 31,
+   "z": 5,
+   "w": 2,
+   "d": 2,
+   "type": "green",
+   "color": "#3a3f47",
+   "order": 5,
+   "elev": 5,
+   "factory": "fb",
+   "floor": "l2"
+  },
+  {
+   "x": 46.75,
+   "z": 0,
+   "w": 2.5,
+   "d": 20,
+   "type": "custom",
+   "color": "#ffffff",
+   "order": -1,
+   "elev": 5,
+   "factory": "fb",
+   "floor": "l2"
+  },
+  {
+   "x": 48,
+   "z": 0,
+   "w": 1,
+   "d": 20,
+   "type": "custom",
+   "color": "#ffffff",
+   "order": -2,
+   "elev": 5,
+   "factory": "fb",
+   "floor": "l2"
+  },
+  {
+   "x": 39,
+   "z": 8,
+   "w": 14,
+   "d": 3,
+   "type": "custom",
+   "color": "#ffffff",
+   "order": -3,
+   "elev": 5,
+   "factory": "fb",
+   "floor": "l2"
+  },
+  {
+   "x": 33,
+   "z": 0.25,
+   "w": 3,
+   "d": 18.5,
+   "type": "custom",
+   "color": "#ffffff",
+   "order": -4,
+   "elev": 5,
+   "factory": "fb",
+   "floor": "l2"
+  },
+  {
+   "x": 38.5,
+   "z": -8,
+   "w": 14,
+   "d": 3,
+   "type": "custom",
+   "color": "#ffffff",
+   "order": -5,
+   "elev": 5,
+   "factory": "fb",
+   "floor": "l2"
+  },
+  {
+   "x": 31,
+   "z": 5,
+   "w": 2,
+   "d": 3,
+   "type": "custom",
+   "color": "#ffffff",
+   "order": -6,
+   "elev": 5,
+   "factory": "fb",
+   "floor": "l2"
+  },
+  {
+   "x": 45,
+   "z": 0,
+   "w": 30,
+   "d": 20,
+   "type": "concrete",
+   "color": "#3a3f47",
+   "order": -9,
+   "elev": 5,
+   "factory": "fb",
+   "floor": "l2"
+  },
+  {
+   "x": 54,
+   "z": 8,
+   "w": 12,
+   "d": 2,
+   "type": "green",
+   "color": "#ffffff",
+   "order": 13,
+   "elev": 5,
+   "factory": "fb",
+   "floor": "l2"
+  },
+  {
+   "x": 54,
+   "z": 8,
+   "w": 12,
+   "d": 3,
+   "type": "custom",
+   "color": "#ffffff",
+   "order": -8,
+   "elev": 5,
+   "factory": "fb",
+   "floor": "l2"
+  }
+ ],
+ "models": [
+  {
+   "url": "/models/injection_machine.glb",
+   "name": "injection_machine",
+   "deviceIp": "",
+   "position": [
+    -7,
+    0,
+    7.5
+   ],
+   "rotation": [
+    3.142,
+    0,
+    3.142
+   ],
+   "scale": [
+    1.939,
+    1,
+    1
+   ],
+   "factory": "fa",
+   "floor": ""
+  },
+  {
+   "url": "/models/injection_machine.glb",
+   "name": "injection_machine",
+   "deviceIp": "",
+   "position": [
+    -7,
+    0,
+    5
+   ],
+   "rotation": [
+    3.142,
+    0,
+    3.142
+   ],
+   "scale": [
+    1.939,
+    1,
+    1
+   ],
+   "factory": "fa",
+   "floor": ""
+  },
+  {
+   "url": "/models/injection_machine.glb",
+   "name": "injection_machine",
+   "deviceIp": "",
+   "position": [
+    -7,
+    0,
+    2.5
+   ],
+   "rotation": [
+    3.142,
+    0,
+    3.142
+   ],
+   "scale": [
+    1.939,
+    1,
+    1
+   ],
+   "factory": "fa",
+   "floor": ""
+  },
+  {
+   "url": "/models/injection_machine.glb",
+   "name": "injection_machine",
+   "deviceIp": "",
+   "position": [
+    -7,
+    0,
+    -3.5
+   ],
+   "rotation": [
+    3.142,
+    0,
+    3.142
+   ],
+   "scale": [
+    1.939,
+    1,
+    1
+   ],
+   "factory": "fa",
+   "floor": ""
+  },
+  {
+   "url": "/models/injection_machine.glb",
+   "name": "injection_machine",
+   "deviceIp": "",
+   "position": [
+    -7,
+    0,
+    -6.5
+   ],
+   "rotation": [
+    3.142,
+    0,
+    3.142
+   ],
+   "scale": [
+    1.939,
+    1,
+    1
+   ],
+   "factory": "fa",
+   "floor": ""
+  },
+  {
+   "url": "/models/injection_machine.glb",
+   "name": "injection_machine",
+   "deviceIp": "",
+   "position": [
+    4.5,
+    0,
+    -5.5
+   ],
+   "rotation": [
+    0,
+    1.571,
+    0
+   ],
+   "scale": [
+    1.497,
+    1,
+    1
+   ],
+   "factory": "fa",
+   "floor": ""
+  },
+  {
+   "url": "/models/injection_machine.glb",
+   "name": "injection_machine",
+   "deviceIp": "",
+   "position": [
+    7.5,
+    0,
+    -5.5
+   ],
+   "rotation": [
+    0,
+    1.571,
+    0
+   ],
+   "scale": [
+    1.497,
+    1,
+    1
+   ],
+   "factory": "fa",
+   "floor": ""
+  },
+  {
+   "url": "/models/injection_machine.glb",
+   "name": "injection_machine",
+   "deviceIp": "",
+   "position": [
+    10.5,
+    0,
+    -5.5
+   ],
+   "rotation": [
+    0,
+    1.571,
+    0
+   ],
+   "scale": [
+    1.497,
+    1,
+    1
+   ],
+   "factory": "fa",
+   "floor": ""
+  },
+  {
+   "url": "/models/glassroom_oasis.glb",
+   "name": "glassroom_oasis",
+   "deviceIp": "",
+   "position": [
+    3,
+    0,
+    2.5
+   ],
+   "rotation": [
+    -1.571,
+    0,
+    0
+   ],
+   "scale": [
+    0.599,
+    0.639,
+    1.018
+   ],
+   "factory": "fa",
+   "floor": ""
+  },
+  {
+   "url": "/models/panel_iot.glb",
+   "name": "panel_iot",
+   "deviceIp": "",
+   "position": [
+    -2.5,
+    0.5,
+    2.5
+   ],
+   "rotation": [
+    -1.571,
+    0,
+    1.571
+   ],
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "factory": "fa",
+   "floor": ""
+  },
+  {
+   "url": "/models/bumper_rack.glb",
+   "name": "bumper_rack",
+   "deviceIp": "",
+   "position": [
+    10,
+    0,
+    6
+   ],
+   "rotation": [
+    -1.571,
+    0,
+    -1.571
+   ],
+   "scale": [
+    0.688,
+    1.071,
+    0.838
+   ],
+   "factory": "fa",
+   "floor": ""
+  },
+  {
+   "url": "/models/bumper_rack.glb",
+   "name": "bumper_rack",
+   "deviceIp": "",
+   "position": [
+    3,
+    0,
+    6
+   ],
+   "rotation": [
+    -1.571,
+    0,
+    -1.571
+   ],
+   "scale": [
+    0.688,
+    1.071,
+    0.838
+   ],
+   "factory": "fa",
+   "floor": ""
+  },
+  {
+   "url": "/models/bumper_rack.glb",
+   "name": "bumper_rack",
+   "deviceIp": "",
+   "position": [
+    4,
+    0,
+    6
+   ],
+   "rotation": [
+    -1.571,
+    0,
+    -1.571
+   ],
+   "scale": [
+    0.688,
+    1.071,
+    0.838
+   ],
+   "factory": "fa",
+   "floor": ""
+  },
+  {
+   "url": "/models/bumper_rack.glb",
+   "name": "bumper_rack",
+   "deviceIp": "",
+   "position": [
+    5,
+    0,
+    6
+   ],
+   "rotation": [
+    -1.571,
+    0,
+    -1.571
+   ],
+   "scale": [
+    0.688,
+    1.071,
+    0.838
+   ],
+   "factory": "fa",
+   "floor": ""
+  },
+  {
+   "url": "/models/bumper_rack.glb",
+   "name": "bumper_rack",
+   "deviceIp": "",
+   "position": [
+    6,
+    0,
+    6
+   ],
+   "rotation": [
+    -1.571,
+    0,
+    -1.571
+   ],
+   "scale": [
+    0.688,
+    1.071,
+    0.838
+   ],
+   "factory": "fa",
+   "floor": ""
+  },
+  {
+   "url": "/models/bumper_rack.glb",
+   "name": "bumper_rack",
+   "deviceIp": "",
+   "position": [
+    7,
+    0,
+    6
+   ],
+   "rotation": [
+    -1.571,
+    0,
+    -1.571
+   ],
+   "scale": [
+    0.688,
+    1.071,
+    0.838
+   ],
+   "factory": "fa",
+   "floor": ""
+  },
+  {
+   "url": "/models/bumper_rack.glb",
+   "name": "bumper_rack",
+   "deviceIp": "",
+   "position": [
+    8,
+    0,
+    6
+   ],
+   "rotation": [
+    -1.571,
+    0,
+    -1.571
+   ],
+   "scale": [
+    0.688,
+    1.071,
+    0.838
+   ],
+   "factory": "fa",
+   "floor": ""
+  },
+  {
+   "url": "/models/bumper_rack.glb",
+   "name": "bumper_rack",
+   "deviceIp": "",
+   "position": [
+    2,
+    0,
+    8
+   ],
+   "rotation": [
+    -1.571,
+    0,
+    -1.571
+   ],
+   "scale": [
+    0.688,
+    1.071,
+    0.838
+   ],
+   "factory": "fa",
+   "floor": ""
+  },
+  {
+   "url": "/models/bumper_rack.glb",
+   "name": "bumper_rack",
+   "deviceIp": "",
+   "position": [
+    3,
+    0,
+    8
+   ],
+   "rotation": [
+    -1.571,
+    0,
+    -1.571
+   ],
+   "scale": [
+    0.688,
+    1.071,
+    0.838
+   ],
+   "factory": "fa",
+   "floor": ""
+  },
+  {
+   "url": "/models/bumper_rack.glb",
+   "name": "bumper_rack",
+   "deviceIp": "",
+   "position": [
+    8,
+    0,
+    8
+   ],
+   "rotation": [
+    -1.571,
+    0,
+    -1.571
+   ],
+   "scale": [
+    0.688,
+    1.071,
+    0.838
+   ],
+   "factory": "fa",
+   "floor": ""
+  },
+  {
+   "url": "/models/bumper_rack.glb",
+   "name": "bumper_rack",
+   "deviceIp": "",
+   "position": [
+    7,
+    0,
+    8
+   ],
+   "rotation": [
+    -1.571,
+    0,
+    -1.571
+   ],
+   "scale": [
+    0.688,
+    1.071,
+    0.838
+   ],
+   "factory": "fa",
+   "floor": ""
+  },
+  {
+   "url": "/models/bumper_rack.glb",
+   "name": "bumper_rack",
+   "deviceIp": "",
+   "position": [
+    6,
+    0,
+    8
+   ],
+   "rotation": [
+    -1.571,
+    0,
+    -1.571
+   ],
+   "scale": [
+    0.688,
+    1.071,
+    0.838
+   ],
+   "factory": "fa",
+   "floor": ""
+  },
+  {
+   "url": "/models/bumper_rack.glb",
+   "name": "bumper_rack",
+   "deviceIp": "",
+   "position": [
+    2,
+    0,
+    -2.5
+   ],
+   "rotation": [
+    -1.571,
+    0,
+    -1.571
+   ],
+   "scale": [
+    0.688,
+    1.071,
+    0.838
+   ],
+   "factory": "fa",
+   "floor": ""
+  },
+  {
+   "url": "/models/bumper_rack.glb",
+   "name": "bumper_rack",
+   "deviceIp": "",
+   "position": [
+    4,
+    0,
+    8
+   ],
+   "rotation": [
+    -1.571,
+    0,
+    -1.571
+   ],
+   "scale": [
+    0.688,
+    1.071,
+    0.838
+   ],
+   "factory": "fa",
+   "floor": ""
+  },
+  {
+   "url": "/models/bumper_rack.glb",
+   "name": "bumper_rack",
+   "deviceIp": "",
+   "position": [
+    9,
+    0,
+    8
+   ],
+   "rotation": [
+    -1.571,
+    0,
+    -1.571
+   ],
+   "scale": [
+    0.688,
+    1.071,
+    0.838
+   ],
+   "factory": "fa",
+   "floor": ""
+  },
+  {
+   "url": "/models/bumper_rack.glb",
+   "name": "bumper_rack",
+   "deviceIp": "",
+   "position": [
+    9,
+    0,
+    6
+   ],
+   "rotation": [
+    -1.571,
+    0,
+    -1.571
+   ],
+   "scale": [
+    0.688,
+    1.071,
+    0.838
+   ],
+   "factory": "fa",
+   "floor": ""
+  },
+  {
+   "url": "/models/bumper_rack.glb",
+   "name": "bumper_rack",
+   "deviceIp": "",
+   "position": [
+    10,
+    0,
+    8
+   ],
+   "rotation": [
+    -1.571,
+    0,
+    -1.571
+   ],
+   "scale": [
+    0.688,
+    1.071,
+    0.838
+   ],
+   "factory": "fa",
+   "floor": ""
+  },
+  {
+   "url": "/models/bumper_rack.glb",
+   "name": "bumper_rack",
+   "deviceIp": "",
+   "position": [
+    11,
+    0,
+    6
+   ],
+   "rotation": [
+    -1.571,
+    0,
+    -1.571
+   ],
+   "scale": [
+    0.688,
+    1.071,
+    0.838
+   ],
+   "factory": "fa",
+   "floor": ""
+  },
+  {
+   "url": "/models/bumper_rack.glb",
+   "name": "bumper_rack",
+   "deviceIp": "",
+   "position": [
+    11,
+    0,
+    8
+   ],
+   "rotation": [
+    -1.571,
+    0,
+    -1.571
+   ],
+   "scale": [
+    0.688,
+    1.071,
+    0.838
+   ],
+   "factory": "fa",
+   "floor": ""
+  },
+  {
+   "url": "/models/bumper_rack.glb",
+   "name": "bumper_rack",
+   "deviceIp": "",
+   "position": [
+    3,
+    0,
+    -2.5
+   ],
+   "rotation": [
+    -1.571,
+    0,
+    -1.571
+   ],
+   "scale": [
+    0.688,
+    1.071,
+    0.838
+   ],
+   "factory": "fa",
+   "floor": ""
+  },
+  {
+   "url": "/models/bumper_rack.glb",
+   "name": "bumper_rack",
+   "deviceIp": "",
+   "position": [
+    12,
+    0,
+    6
+   ],
+   "rotation": [
+    -1.571,
+    0,
+    -1.571
+   ],
+   "scale": [
+    0.688,
+    1.071,
+    0.838
+   ],
+   "factory": "fa",
+   "floor": ""
+  },
+  {
+   "url": "/models/bumper_rack.glb",
+   "name": "bumper_rack",
+   "deviceIp": "",
+   "position": [
+    12,
+    0,
+    8
+   ],
+   "rotation": [
+    -1.571,
+    0,
+    -1.571
+   ],
+   "scale": [
+    0.688,
+    1.071,
+    0.838
+   ],
+   "factory": "fa",
+   "floor": ""
+  },
+  {
+   "url": "/models/bumper_rack.glb",
+   "name": "bumper_rack",
+   "deviceIp": "",
+   "position": [
+    -1.5,
+    0,
+    6.5
+   ],
+   "rotation": [
+    -1.571,
+    0,
+    -1.571
+   ],
+   "scale": [
+    0.688,
+    1.071,
+    0.838
+   ],
+   "factory": "fa",
+   "floor": ""
+  },
+  {
+   "url": "/models/bumper_rack.glb",
+   "name": "bumper_rack",
+   "deviceIp": "",
+   "position": [
+    -3.5,
+    0,
+    9
+   ],
+   "rotation": [
+    -1.571,
+    0,
+    -3.142
+   ],
+   "scale": [
+    0.688,
+    1.071,
+    0.838
+   ],
+   "factory": "fa",
+   "floor": ""
+  },
+  {
+   "url": "/models/bumper_rack.glb",
+   "name": "bumper_rack",
+   "deviceIp": "",
+   "position": [
+    5,
+    0,
+    8
+   ],
+   "rotation": [
+    -1.571,
+    0,
+    -1.571
+   ],
+   "scale": [
+    0.688,
+    1.071,
+    0.838
+   ],
+   "factory": "fa",
+   "floor": ""
+  },
+  {
+   "url": "/models/bumper_rack.glb",
+   "name": "bumper_rack",
+   "deviceIp": "",
+   "position": [
+    3,
+    0,
+    -4.5
+   ],
+   "rotation": [
+    -1.571,
+    0,
+    -1.571
+   ],
+   "scale": [
+    0.688,
+    1.071,
+    0.838
+   ],
+   "factory": "fa",
+   "floor": ""
+  },
+  {
+   "url": "/models/bumper_rack.glb",
+   "name": "bumper_rack",
+   "deviceIp": "",
+   "position": [
+    3,
+    0,
+    -6.5
+   ],
+   "rotation": [
+    -1.571,
+    0,
+    -1.571
+   ],
+   "scale": [
+    0.688,
+    1.071,
+    0.838
+   ],
+   "factory": "fa",
+   "floor": ""
+  },
+  {
+   "url": "/models/bumper_rack.glb",
+   "name": "bumper_rack",
+   "deviceIp": "",
+   "position": [
+    -3.5,
+    0,
+    -2
+   ],
+   "rotation": [
+    -1.571,
+    0,
+    0
+   ],
+   "scale": [
+    0.688,
+    1.071,
+    0.838
+   ],
+   "factory": "fa",
+   "floor": ""
+  },
+  {
+   "url": "/models/bumper_rack.glb",
+   "name": "bumper_rack",
+   "deviceIp": "",
+   "position": [
+    -6,
+    0,
+    -2
+   ],
+   "rotation": [
+    -1.571,
+    0,
+    0
+   ],
+   "scale": [
+    0.688,
+    1.071,
+    0.838
+   ],
+   "factory": "fa",
+   "floor": ""
+  },
+  {
+   "url": "/models/bumper_rack.glb",
+   "name": "bumper_rack",
+   "deviceIp": "",
+   "position": [
+    -8.5,
+    0,
+    -2
+   ],
+   "rotation": [
+    -1.571,
+    0,
+    0
+   ],
+   "scale": [
+    0.688,
+    1.071,
+    0.838
+   ],
+   "factory": "fa",
+   "floor": ""
+  },
+  {
+   "url": "/models/injection_machine.glb",
+   "name": "injection_machine",
+   "deviceIp": "",
+   "position": [
+    52.5,
+    0,
+    7.5
+   ],
+   "rotation": [
+    0,
+    0,
+    0
+   ],
+   "scale": [
+    1.323,
+    1,
+    1.062
+   ],
+   "factory": "fb",
+   "floor": "l1"
+  },
+  {
+   "url": "/models/injection_machine.glb",
+   "name": "injection_machine",
+   "deviceIp": "",
+   "position": [
+    37,
+    0,
+    5
+   ],
+   "rotation": [
+    -3.142,
+    0,
+    -3.142
+   ],
+   "scale": [
+    1.323,
+    1,
+    1.062
+   ],
+   "factory": "fb",
+   "floor": "l1"
+  },
+  {
+   "url": "/models/injection_machine.glb",
+   "name": "injection_machine",
+   "deviceIp": "",
+   "position": [
+    52.5,
+    0,
+    1.5
+   ],
+   "rotation": [
+    0,
+    0,
+    0
+   ],
+   "scale": [
+    1.323,
+    1,
+    1.062
+   ],
+   "factory": "fb",
+   "floor": "l1"
+  },
+  {
+   "url": "/models/injection_machine.glb",
+   "name": "injection_machine",
+   "deviceIp": "",
+   "position": [
+    52.5,
+    0,
+    -4.5
+   ],
+   "rotation": [
+    0,
+    0,
+    0
+   ],
+   "scale": [
+    1.323,
+    1,
+    1.062
+   ],
+   "factory": "fb",
+   "floor": "l1"
+  },
+  {
+   "url": "/models/injection_machine.glb",
+   "name": "injection_machine",
+   "deviceIp": "",
+   "position": [
+    37,
+    0,
+    -1
+   ],
+   "rotation": [
+    3.141,
+    0,
+    3.141
+   ],
+   "scale": [
+    1.323,
+    1,
+    1.062
+   ],
+   "factory": "fb",
+   "floor": "l1"
+  },
+  {
+   "url": "/models/injection_machine.glb",
+   "name": "injection_machine",
+   "deviceIp": "",
+   "position": [
+    37,
+    0,
+    -7
+   ],
+   "rotation": [
+    3.141,
+    0,
+    3.141
+   ],
+   "scale": [
+    1.323,
+    1,
+    1.062
+   ],
+   "factory": "fb",
+   "floor": "l1"
+  },
+  {
+   "url": "/models/bumper_rack.glb",
+   "name": "bumper_rack",
+   "deviceIp": "",
+   "position": [
+    38.5,
+    0,
+    8
+   ],
+   "rotation": [
+    -1.571,
+    0,
+    0
+   ],
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "factory": "fb",
+   "floor": "l1"
+  },
+  {
+   "url": "/models/bumper_rack.glb",
+   "name": "bumper_rack",
+   "deviceIp": "",
+   "position": [
+    38.5,
+    0,
+    9
+   ],
+   "rotation": [
+    -1.571,
+    0,
+    0
+   ],
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "factory": "fb",
+   "floor": "l1"
+  },
+  {
+   "url": "/models/bumper_rack.glb",
+   "name": "bumper_rack",
+   "deviceIp": "",
+   "position": [
+    36.5,
+    0,
+    8
+   ],
+   "rotation": [
+    -1.571,
+    0,
+    0
+   ],
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "factory": "fb",
+   "floor": "l1"
+  },
+  {
+   "url": "/models/bumper_rack.glb",
+   "name": "bumper_rack",
+   "deviceIp": "",
+   "position": [
+    34.5,
+    0,
+    8
+   ],
+   "rotation": [
+    -1.571,
+    0,
+    0
+   ],
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "factory": "fb",
+   "floor": "l1"
+  },
+  {
+   "url": "/models/bumper_rack.glb",
+   "name": "bumper_rack",
+   "deviceIp": "",
+   "position": [
+    36.5,
+    0,
+    9
+   ],
+   "rotation": [
+    -1.571,
+    0,
+    0
+   ],
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "factory": "fb",
+   "floor": "l1"
+  },
+  {
+   "url": "/models/bumper_rack.glb",
+   "name": "bumper_rack",
+   "deviceIp": "",
+   "position": [
+    34.5,
+    0,
+    9
+   ],
+   "rotation": [
+    -1.571,
+    0,
+    0
+   ],
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "factory": "fb",
+   "floor": "l1"
+  },
+  {
+   "url": "/models/bumper_rack.glb",
+   "name": "bumper_rack",
+   "deviceIp": "",
+   "position": [
+    32.5,
+    0,
+    5
+   ],
+   "rotation": [
+    -1.571,
+    0,
+    1.571
+   ],
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "factory": "fb",
+   "floor": "l1"
+  },
+  {
+   "url": "/models/bumper_rack.glb",
+   "name": "bumper_rack",
+   "deviceIp": "",
+   "position": [
+    32.5,
+    0,
+    -1
+   ],
+   "rotation": [
+    -1.571,
+    0,
+    1.571
+   ],
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "factory": "fb",
+   "floor": "l1"
+  },
+  {
+   "url": "/models/bumper_rack.glb",
+   "name": "bumper_rack",
+   "deviceIp": "",
+   "position": [
+    32.5,
+    0,
+    -7
+   ],
+   "rotation": [
+    -1.571,
+    0,
+    1.571
+   ],
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "factory": "fb",
+   "floor": "l1"
+  },
+  {
+   "url": "/models/bumper_rack.glb",
+   "name": "bumper_rack",
+   "deviceIp": "",
+   "position": [
+    57,
+    -0.5,
+    -4.5
+   ],
+   "rotation": [
+    -1.571,
+    0,
+    1.571
+   ],
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "factory": "fb",
+   "floor": "l1"
+  },
+  {
+   "url": "/models/bumper_rack.glb",
+   "name": "bumper_rack",
+   "deviceIp": "",
+   "position": [
+    57,
+    -0.5,
+    6
+   ],
+   "rotation": [
+    -1.571,
+    0,
+    1.571
+   ],
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "factory": "fb",
+   "floor": "l1"
+  },
+  {
+   "url": "/models/bumper_rack.glb",
+   "name": "bumper_rack",
+   "deviceIp": "",
+   "position": [
+    57,
+    -0.5,
+    8
+   ],
+   "rotation": [
+    -1.571,
+    0,
+    1.571
+   ],
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "factory": "fb",
+   "floor": "l1"
+  },
+  {
+   "url": "/models/bumper_rack.glb",
+   "name": "bumper_rack",
+   "deviceIp": "",
+   "position": [
+    55,
+    0,
+    -2.5
+   ],
+   "rotation": [
+    -1.571,
+    0,
+    0
+   ],
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "factory": "fb",
+   "floor": "l1"
+  },
+  {
+   "url": "/models/bumper_rack.glb",
+   "name": "bumper_rack",
+   "deviceIp": "",
+   "position": [
+    53,
+    0,
+    -2.5
+   ],
+   "rotation": [
+    -1.571,
+    0,
+    0
+   ],
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "factory": "fb",
+   "floor": "l1"
+  },
+  {
+   "url": "/models/bumper_rack.glb",
+   "name": "bumper_rack",
+   "deviceIp": "",
+   "position": [
+    55,
+    0,
+    5.5
+   ],
+   "rotation": [
+    -1.571,
+    0,
+    0
+   ],
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "factory": "fb",
+   "floor": "l1"
+  },
+  {
+   "url": "/models/bumper_rack.glb",
+   "name": "bumper_rack",
+   "deviceIp": "",
+   "position": [
+    55,
+    0,
+    6.5
+   ],
+   "rotation": [
+    -1.571,
+    0,
+    0
+   ],
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "factory": "fb",
+   "floor": "l1"
+  },
+  {
+   "url": "/models/dcs.glb",
+   "name": "dcs",
+   "deviceIp": "",
+   "position": [
+    49,
+    0,
+    7.5
+   ],
+   "rotation": [
+    0,
+    -1.571,
+    0
+   ],
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "factory": "fb",
+   "floor": "l1"
+  },
+  {
+   "url": "/models/dcs.glb",
+   "name": "dcs",
+   "deviceIp": "",
+   "position": [
+    49,
+    0,
+    1.5
+   ],
+   "rotation": [
+    0,
+    -1.571,
+    0
+   ],
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "factory": "fb",
+   "floor": "l1"
+  },
+  {
+   "url": "/models/dcs.glb",
+   "name": "dcs",
+   "deviceIp": "",
+   "position": [
+    49,
+    0,
+    -4.5
+   ],
+   "rotation": [
+    0,
+    -1.571,
+    0
+   ],
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "factory": "fb",
+   "floor": "l1"
+  },
+  {
+   "url": "/models/dcs.glb",
+   "name": "dcs",
+   "deviceIp": "",
+   "position": [
+    40.5,
+    0,
+    5
+   ],
+   "rotation": [
+    0,
+    1.571,
+    0
+   ],
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "factory": "fb",
+   "floor": "l1"
+  },
+  {
+   "url": "/models/dcs.glb",
+   "name": "dcs",
+   "deviceIp": "",
+   "position": [
+    40.5,
+    0,
+    -1
+   ],
+   "rotation": [
+    0,
+    1.571,
+    0
+   ],
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "factory": "fb",
+   "floor": "l1"
+  },
+  {
+   "url": "/models/dcs.glb",
+   "name": "dcs",
+   "deviceIp": "",
+   "position": [
+    40.5,
+    0,
+    -7
+   ],
+   "rotation": [
+    0,
+    1.571,
+    0
+   ],
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "factory": "fb",
+   "floor": "l1"
+  },
+  {
+   "url": "/models/injection_machine.glb",
+   "name": "injection_machine",
+   "deviceIp": "",
+   "position": [
+    40,
+    5,
+    4.5
+   ],
+   "rotation": [
+    -3.142,
+    0,
+    -3.142
+   ],
+   "scale": [
+    1.476,
+    1,
+    1.47
+   ],
+   "factory": "fb",
+   "floor": "l2"
+  },
+  {
+   "url": "/models/injection_machine.glb",
+   "name": "injection_machine",
+   "deviceIp": "",
+   "position": [
+    40,
+    5,
+    0
+   ],
+   "rotation": [
+    -3.142,
+    0,
+    -3.142
+   ],
+   "scale": [
+    1.476,
+    1,
+    1.47
+   ],
+   "factory": "fb",
+   "floor": "l2"
+  },
+  {
+   "url": "/models/injection_machine.glb",
+   "name": "injection_machine",
+   "deviceIp": "",
+   "position": [
+    40,
+    5,
+    -4.5
+   ],
+   "rotation": [
+    -3.142,
+    0,
+    -3.142
+   ],
+   "scale": [
+    1.476,
+    1,
+    1.47
+   ],
+   "factory": "fb",
+   "floor": "l2"
+  },
+  {
+   "url": "/models/dcs.glb",
+   "name": "dcs",
+   "deviceIp": "",
+   "position": [
+    44,
+    5,
+    0
+   ],
+   "rotation": [
+    0,
+    1.571,
+    0
+   ],
+   "scale": [
+    1.08,
+    1,
+    1.578
+   ],
+   "factory": "fb",
+   "floor": "l2"
+  },
+  {
+   "url": "/models/dcs.glb",
+   "name": "dcs",
+   "deviceIp": "",
+   "position": [
+    44,
+    5,
+    4.5
+   ],
+   "rotation": [
+    0,
+    1.571,
+    0
+   ],
+   "scale": [
+    1.08,
+    1,
+    1.578
+   ],
+   "factory": "fb",
+   "floor": "l2"
+  },
+  {
+   "url": "/models/dcs.glb",
+   "name": "dcs",
+   "deviceIp": "",
+   "position": [
+    44,
+    5,
+    -4.5
+   ],
+   "rotation": [
+    0,
+    1.571,
+    0
+   ],
+   "scale": [
+    1.08,
+    1,
+    1.578
+   ],
+   "factory": "fb",
+   "floor": "l2"
+  },
+  {
+   "url": "/models/bumper_rack.glb",
+   "name": "bumper_rack",
+   "deviceIp": "",
+   "position": [
+    50,
+    5,
+    5
+   ],
+   "rotation": [
+    -1.571,
+    0,
+    0
+   ],
+   "scale": [
+    0.844,
+    0.957,
+    0.886
+   ],
+   "factory": "fb",
+   "floor": "l2"
+  },
+  {
+   "url": "/models/bumper_rack.glb",
+   "name": "bumper_rack",
+   "deviceIp": "",
+   "position": [
+    50,
+    5,
+    4.5
+   ],
+   "rotation": [
+    -1.571,
+    0,
+    0
+   ],
+   "scale": [
+    0.844,
+    0.957,
+    0.886
+   ],
+   "factory": "fb",
+   "floor": "l2"
+  },
+  {
+   "url": "/models/bumper_rack.glb",
+   "name": "bumper_rack",
+   "deviceIp": "",
+   "position": [
+    51.5,
+    5,
+    4.5
+   ],
+   "rotation": [
+    -1.571,
+    0,
+    0
+   ],
+   "scale": [
+    0.844,
+    0.957,
+    0.886
+   ],
+   "factory": "fb",
+   "floor": "l2"
+  },
+  {
+   "url": "/models/bumper_rack.glb",
+   "name": "bumper_rack",
+   "deviceIp": "",
+   "position": [
+    51.5,
+    5,
+    5
+   ],
+   "rotation": [
+    -1.571,
+    0,
+    0
+   ],
+   "scale": [
+    0.844,
+    0.957,
+    0.886
+   ],
+   "factory": "fb",
+   "floor": "l2"
+  },
+  {
+   "url": "/models/bumper_rack.glb",
+   "name": "bumper_rack",
+   "deviceIp": "",
+   "position": [
+    53,
+    5,
+    4.5
+   ],
+   "rotation": [
+    -1.571,
+    0,
+    0
+   ],
+   "scale": [
+    0.844,
+    0.957,
+    0.886
+   ],
+   "factory": "fb",
+   "floor": "l2"
+  },
+  {
+   "url": "/models/bumper_rack.glb",
+   "name": "bumper_rack",
+   "deviceIp": "",
+   "position": [
+    53,
+    5,
+    5
+   ],
+   "rotation": [
+    -1.571,
+    0,
+    0
+   ],
+   "scale": [
+    0.844,
+    0.957,
+    0.886
+   ],
+   "factory": "fb",
+   "floor": "l2"
+  },
+  {
+   "url": "/models/bumper_rack.glb",
+   "name": "bumper_rack",
+   "deviceIp": "",
+   "position": [
+    50,
+    5,
+    -5
+   ],
+   "rotation": [
+    -1.571,
+    0,
+    0
+   ],
+   "scale": [
+    0.844,
+    0.957,
+    0.886
+   ],
+   "factory": "fb",
+   "floor": "l2"
+  },
+  {
+   "url": "/models/bumper_rack.glb",
+   "name": "bumper_rack",
+   "deviceIp": "",
+   "position": [
+    50,
+    5,
+    -4.5
+   ],
+   "rotation": [
+    -1.571,
+    0,
+    0
+   ],
+   "scale": [
+    0.844,
+    0.957,
+    0.886
+   ],
+   "factory": "fb",
+   "floor": "l2"
+  },
+  {
+   "url": "/models/bumper_rack.glb",
+   "name": "bumper_rack",
+   "deviceIp": "",
+   "position": [
+    51.5,
+    5,
+    -5
+   ],
+   "rotation": [
+    -1.571,
+    0,
+    0
+   ],
+   "scale": [
+    0.844,
+    0.957,
+    0.886
+   ],
+   "factory": "fb",
+   "floor": "l2"
+  },
+  {
+   "url": "/models/bumper_rack.glb",
+   "name": "bumper_rack",
+   "deviceIp": "",
+   "position": [
+    51.5,
+    5,
+    -4.5
+   ],
+   "rotation": [
+    -1.571,
+    0,
+    0
+   ],
+   "scale": [
+    0.844,
+    0.957,
+    0.886
+   ],
+   "factory": "fb",
+   "floor": "l2"
+  },
+  {
+   "url": "/models/bumper_rack.glb",
+   "name": "bumper_rack",
+   "deviceIp": "",
+   "position": [
+    53,
+    5,
+    -5
+   ],
+   "rotation": [
+    -1.571,
+    0,
+    0
+   ],
+   "scale": [
+    0.844,
+    0.957,
+    0.886
+   ],
+   "factory": "fb",
+   "floor": "l2"
+  },
+  {
+   "url": "/models/bumper_rack.glb",
+   "name": "bumper_rack",
+   "deviceIp": "",
+   "position": [
+    53,
+    5,
+    -4.5
+   ],
+   "rotation": [
+    -1.571,
+    0,
+    0
+   ],
+   "scale": [
+    0.844,
+    0.957,
+    0.886
+   ],
+   "factory": "fb",
+   "floor": "l2"
+  },
+  {
+   "url": "/models/bumper_rack.glb",
+   "name": "bumper_rack",
+   "deviceIp": "",
+   "position": [
+    54.5,
+    5,
+    -5
+   ],
+   "rotation": [
+    -1.571,
+    0,
+    0
+   ],
+   "scale": [
+    0.844,
+    0.957,
+    0.886
+   ],
+   "factory": "fb",
+   "floor": "l2"
+  },
+  {
+   "url": "/models/bumper_rack.glb",
+   "name": "bumper_rack",
+   "deviceIp": "",
+   "position": [
+    54.5,
+    5,
+    -4.5
+   ],
+   "rotation": [
+    -1.571,
+    0,
+    0
+   ],
+   "scale": [
+    0.844,
+    0.957,
+    0.886
+   ],
+   "factory": "fb",
+   "floor": "l2"
+  },
+  {
+   "url": "/models/bumper_rack.glb",
+   "name": "bumper_rack",
+   "deviceIp": "",
+   "position": [
+    56,
+    5,
+    -5
+   ],
+   "rotation": [
+    -1.571,
+    0,
+    0
+   ],
+   "scale": [
+    0.844,
+    0.957,
+    0.886
+   ],
+   "factory": "fb",
+   "floor": "l2"
+  },
+  {
+   "url": "/models/bumper_rack.glb",
+   "name": "bumper_rack",
+   "deviceIp": "",
+   "position": [
+    56,
+    5,
+    -4.5
+   ],
+   "rotation": [
+    -1.571,
+    0,
+    0
+   ],
+   "scale": [
+    0.844,
+    0.957,
+    0.886
+   ],
+   "factory": "fb",
+   "floor": "l2"
+  },
+  {
+   "url": "/models/bumper_rack.glb",
+   "name": "bumper_rack",
+   "deviceIp": "",
+   "position": [
+    50,
+    5,
+    -0.5
+   ],
+   "rotation": [
+    -1.571,
+    0,
+    0
+   ],
+   "scale": [
+    0.844,
+    0.957,
+    0.886
+   ],
+   "factory": "fb",
+   "floor": "l2"
+  },
+  {
+   "url": "/models/bumper_rack.glb",
+   "name": "bumper_rack",
+   "deviceIp": "",
+   "position": [
+    50,
+    5,
+    0
+   ],
+   "rotation": [
+    -1.571,
+    0,
+    0
+   ],
+   "scale": [
+    0.844,
+    0.957,
+    0.886
+   ],
+   "factory": "fb",
+   "floor": "l2"
+  },
+  {
+   "url": "/models/bumper_rack.glb",
+   "name": "bumper_rack",
+   "deviceIp": "",
+   "position": [
+    51.5,
+    5,
+    -0.5
+   ],
+   "rotation": [
+    -1.571,
+    0,
+    0
+   ],
+   "scale": [
+    0.844,
+    0.957,
+    0.886
+   ],
+   "factory": "fb",
+   "floor": "l2"
+  },
+  {
+   "url": "/models/bumper_rack.glb",
+   "name": "bumper_rack",
+   "deviceIp": "",
+   "position": [
+    51.5,
+    5,
+    0
+   ],
+   "rotation": [
+    -1.571,
+    0,
+    0
+   ],
+   "scale": [
+    0.844,
+    0.957,
+    0.886
+   ],
+   "factory": "fb",
+   "floor": "l2"
+  },
+  {
+   "url": "/models/bumper_rack.glb",
+   "name": "bumper_rack",
+   "deviceIp": "",
+   "position": [
+    53,
+    5,
+    -0.5
+   ],
+   "rotation": [
+    -1.571,
+    0,
+    0
+   ],
+   "scale": [
+    0.844,
+    0.957,
+    0.886
+   ],
+   "factory": "fb",
+   "floor": "l2"
+  },
+  {
+   "url": "/models/bumper_rack.glb",
+   "name": "bumper_rack",
+   "deviceIp": "",
+   "position": [
+    53,
+    5,
+    0
+   ],
+   "rotation": [
+    -1.571,
+    0,
+    0
+   ],
+   "scale": [
+    0.844,
+    0.957,
+    0.886
+   ],
+   "factory": "fb",
+   "floor": "l2"
+  },
+  {
+   "url": "/models/bumper_rack.glb",
+   "name": "bumper_rack",
+   "deviceIp": "",
+   "position": [
+    54.5,
+    5,
+    -0.5
+   ],
+   "rotation": [
+    -1.571,
+    0,
+    0
+   ],
+   "scale": [
+    0.844,
+    0.957,
+    0.886
+   ],
+   "factory": "fb",
+   "floor": "l2"
+  },
+  {
+   "url": "/models/bumper_rack.glb",
+   "name": "bumper_rack",
+   "deviceIp": "",
+   "position": [
+    54.5,
+    5,
+    0
+   ],
+   "rotation": [
+    -1.571,
+    0,
+    0
+   ],
+   "scale": [
+    0.844,
+    0.957,
+    0.886
+   ],
+   "factory": "fb",
+   "floor": "l2"
+  },
+  {
+   "url": "/models/bumper_rack.glb",
+   "name": "bumper_rack",
+   "deviceIp": "",
+   "position": [
+    56,
+    5,
+    -0.5
+   ],
+   "rotation": [
+    -1.571,
+    0,
+    0
+   ],
+   "scale": [
+    0.844,
+    0.957,
+    0.886
+   ],
+   "factory": "fb",
+   "floor": "l2"
+  },
+  {
+   "url": "/models/bumper_rack.glb",
+   "name": "bumper_rack",
+   "deviceIp": "",
+   "position": [
+    56,
+    5,
+    0
+   ],
+   "rotation": [
+    -1.571,
+    0,
+    0
+   ],
+   "scale": [
+    0.844,
+    0.957,
+    0.886
+   ],
+   "factory": "fb",
+   "floor": "l2"
+  },
+  {
+   "url": "/models/dcs.glb",
+   "name": "dcs",
+   "deviceIp": "",
+   "position": [
+    31,
+    5,
+    2.5
+   ],
+   "rotation": [
+    0,
+    0,
+    0
+   ],
+   "scale": [
+    1.08,
+    1,
+    1.578
+   ],
+   "factory": "fb",
+   "floor": "l2"
+  }
+ ],
+ "pins": [
+  {
+   "x": -1.5,
+   "z": 2.5,
+   "ip": "172.19.88.17",
+   "label": "IoT Node 001",
+   "y": 0,
+   "factory": "fa",
+   "floor": ""
+  },
+  {
+   "x": -4.5,
+   "z": 1,
+   "ip": "172.19.88.21",
+   "label": "Printer M#5",
+   "y": 0,
+   "factory": "fa",
+   "floor": ""
+  },
+  {
+   "x": 40.5,
+   "z": 4.5,
+   "ip": "172.19.88.113",
+   "label": "DCS Inject 1600T",
+   "y": 0,
+   "factory": "fb",
+   "floor": "l1"
+  },
+  {
+   "x": 49,
+   "z": 7,
+   "ip": "172.19.88.95",
+   "label": "DCS Inject 1300T",
+   "y": 0,
+   "factory": "fb",
+   "floor": "l1"
+  },
+  {
+   "x": 40.5,
+   "z": -1.5,
+   "ip": "172.19.88.134",
+   "label": "DCS Inject 2500T",
+   "y": 0,
+   "factory": "fb",
+   "floor": "l1"
+  },
+  {
+   "x": 49,
+   "z": 1,
+   "ip": "172.19.88.130",
+   "label": "DCS Inject 2500T",
+   "y": 0,
+   "factory": "fb",
+   "floor": "l1"
+  },
+  {
+   "x": 40.5,
+   "z": -7.5,
+   "ip": "172.19.88.138",
+   "label": "DCS Inject 2500T",
+   "y": 0,
+   "factory": "fb",
+   "floor": "l1"
+  },
+  {
+   "x": 49,
+   "z": -5.5,
+   "ip": "172.19.88.137",
+   "label": "DCS Inject 1600T",
+   "y": 0,
+   "factory": "fb",
+   "floor": "l1"
+  },
+  {
+   "x": 44,
+   "z": 4,
+   "ip": "172.19.88.8",
+   "label": "DCS Inject 1",
+   "y": 5,
+   "factory": "fb",
+   "floor": "l2"
+  },
+  {
+   "x": 44,
+   "z": -0.5,
+   "ip": "172.19.88.9",
+   "label": "DCS Inject 2",
+   "y": 5,
+   "factory": "fb",
+   "floor": "l2"
+  },
+  {
+   "x": 44,
+   "z": -5,
+   "ip": "172.19.88.10",
+   "label": "DCS Inject 3",
+   "y": 5,
+   "factory": "fb",
+   "floor": "l2"
+  },
+  {
+   "x": 31,
+   "z": 2,
+   "ip": "172.19.88.5",
+   "label": "DCS Material Input",
+   "y": 5,
+   "factory": "fb",
+   "floor": "l2"
+  }
+ ],
+ "texts": [
+  {
+   "x": 3,
+   "y": 1.6,
+   "z": 2.5,
+   "text": "Oasis",
+   "size": 1,
+   "color": "#e2e8f0",
+   "factory": "fa",
+   "floor": ""
+  },
+  {
+   "x": 0,
+   "y": 4,
+   "z": 0.5,
+   "text": "Factory 2",
+   "size": 1,
+   "color": "#e2e8f0",
+   "factory": "fa",
+   "floor": ""
+  },
+  {
+   "x": 45,
+   "y": 4,
+   "z": 0,
+   "text": "Factory 3",
+   "size": 1,
+   "color": "#e2e8f0",
+   "factory": "fb",
+   "floor": "l1"
+  },
+  {
+   "x": 45.5,
+   "y": 9.5,
+   "z": 0,
+   "text": "Factory 4",
+   "size": 1,
+   "color": "#e2e8f0",
+   "factory": "fb",
+   "floor": "l2"
+  },
+  {
+   "x": 0,
+   "y": 6,
+   "z": -12,
+   "text": "Factory A",
+   "size": 2.2,
+   "color": "#93c5fd",
+   "factory": "fa"
+  },
+  {
+   "x": 45,
+   "y": 12,
+   "z": -12,
+   "text": "Factory B",
+   "size": 2.2,
+   "color": "#93c5fd",
+   "factory": "fb"
+  }
+ ],
+ "lighting": {
+  "exposure": 0.8,
+  "sunElevation": 33,
+  "sunAzimuth": 84,
+  "sunIntensity": 1.8,
+  "ambient": 0.35,
+  "bloom": {
+   "strength": 0,
+   "threshold": 0.9,
+   "radius": 0.5
+  }
+ },
+ "camera": null
+}

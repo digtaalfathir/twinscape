@@ -97,6 +97,9 @@
     // ── kawasan / district ──
     factory: { en: "Factory", id: "Factory" },
     all_factories: { en: "All", id: "Semua" },
+    floor: { en: "Floor", id: "Lantai" },
+    all_floors: { en: "All", id: "Semua" },
+    hint_focus: { en: "Press <kbd>Esc</kbd> or pick <b>All</b> to zoom out", id: "Tekan <kbd>Esc</kbd> atau pilih <b>Semua</b> untuk keluar fokus" },
   };
 
   var LANG = localStorage.getItem("pulse-lang") || "en";
