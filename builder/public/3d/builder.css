@@ -96,3 +96,13 @@ input[type=checkbox]{width:15px;height:15px;accent-color:var(--accent);cursor:po
 #toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
 #toast.ok{border-color:rgba(16,185,129,0.4);color:#6ee7b7}
 #toast.err{border-color:rgba(239,68,68,0.4);color:#fca5a5}
+
+/* Kawasan (Fase 1): modal import + daftar factory */
+.imp-modal{position:fixed;inset:0;z-index:200;background:rgba(8,11,20,0.62);display:flex;align-items:center;justify-content:center;padding:20px}
+.imp-card{width:100%;max-width:390px;background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:18px;box-shadow:0 22px 60px rgba(0,0,0,0.55);color:var(--text)}
+.fac-row{display:flex;align-items:center;gap:6px;flex-wrap:wrap;padding:6px 0;border-bottom:1px solid var(--border)}
+.fac-row .fac-nm{font-weight:600}
+.fac-row small{color:var(--text-dim);font-size:11px}
+.fac-acts{margin-left:auto;display:flex;gap:2px}
+.fac-acts button{width:22px;height:22px;border:1px solid var(--border);background:transparent;color:var(--text);border-radius:6px;cursor:pointer;font-size:11px;line-height:1;padding:0}
+.fac-acts button:hover{background:var(--accent);color:#fff;border-color:var(--accent)}

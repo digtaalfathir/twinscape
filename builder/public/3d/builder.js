@@ -38,6 +38,8 @@ let snapOn = true;
 let draggingGizmo = false;
 let refPlane = null, refAspect = 1;
 let floorOrder = 0;       // z-layer counter for floors
+let factories = [];       // Kawasan (Fase 1): manifest [{id,name,floors:[{id,name,y}]}]
+let activeFactory = "";   // "" = kawasan (objek umum/jalan); id = objek baru ditandai factory ini
 let clipboard = null;     // for copy/paste
 let history = [], redoStack = [];   // B2: undo/redo (snapshots of scene JSON)
 const HISTORY_MAX = 60;
@@ -349,6 +351,7 @@ function recordOf(o) {
 //  OBJECTS
 // =====================================================================
 function addObject(type, obj, data) {
+  if (data && data.factory === undefined && activeFactory) data.factory = activeFactory;   // objek baru → tag factory aktif (kawasan="" → tanpa tag)
   const id = idc++;
   obj.userData.recId = id;
   const rec = { id, type, obj, data };
@@ -460,6 +463,7 @@ function segEndpoints(d, seg) {
 }
 function buildWallGroup(d) {
   const g = new THREE.Group();
+  g.position.y = d.baseY || 0;                 // untuk lantai bertumpuk (kawasan multi-lantai)
   const mat = new THREE.MeshStandardMaterial({ color: new THREE.Color(d.color || "#8fa3c4"), roughness: 0.6, metalness: 0.12, envMapIntensity: 0.9 });
   const pts = d.points || [];
   const openings = d.openings || [];
@@ -901,8 +905,10 @@ function refreshList() {
 //  SAVE / LOAD / NEW
 // =====================================================================
 function buildSceneJSON() {
+  const tag = (o) => { const t = {}; if (o.data.factory) t.factory = o.data.factory; if (o.data.floor) t.floor = o.data.floor; return t; };
   return {
     version: 1, units: "m",
+    factories: factories.length ? JSON.parse(JSON.stringify(factories)) : undefined,   // manifest kawasan (opsional)
     walls: objects.filter((o) => o.type === "wall").map((o) => o.data),
     floors: objects.filter((o) => o.type === "floor").map((o) => o.data),
     models: objects.filter((o) => o.type === "model").map((o) => ({
@@ -910,13 +916,14 @@ function buildSceneJSON() {
       position: [r3(o.obj.position.x), r3(o.obj.position.y), r3(o.obj.position.z)],
       rotation: [r3(o.obj.rotation.x), r3(o.obj.rotation.y), r3(o.obj.rotation.z)],   // rotasi PENUH (x,y,z)
       scale: [r3(o.obj.scale.x), r3(o.obj.scale.y), r3(o.obj.scale.z)],               // skala PENUH
+      ...tag(o),
     })),
     pins: objects.filter((o) => o.type === "pin").map((o) => ({
-      x: r3(o.obj.position.x), z: r3(o.obj.position.z), ip: o.data.ip || "", label: o.data.label || "",
+      x: r3(o.obj.position.x), z: r3(o.obj.position.z), ip: o.data.ip || "", label: o.data.label || "", ...tag(o),
     })),
     texts: objects.filter((o) => o.type === "text").map((o) => ({
       x: r3(o.obj.position.x), y: r3(o.obj.position.y), z: r3(o.obj.position.z),
-      text: o.data.text, size: o.data.size, color: o.data.color,
+      text: o.data.text, size: o.data.size, color: o.data.color, ...tag(o),
     })),
     lighting: JSON.parse(JSON.stringify(lighting)),
     camera: {
@@ -998,7 +1005,107 @@ $("fileScene").onchange = (e) => {
   if (!f) return;
   f.text().then((t) => { try { pushHistory(); loadSceneJSON(JSON.parse(t)); toast("Scene dimuat", true); } catch { toast("JSON tidak valid", false); } });
 };
-$("btnNew").onclick = () => { if (confirm("Kosongkan scene?")) { pushHistory(); clearAll(); } };
+$("btnNew").onclick = () => { if (confirm("Kosongkan scene?")) { pushHistory(); clearAll(); factories = []; activeFactory = ""; refreshFactoryUI(); } };
+
+// ===================================================================
+//  KAWASAN (Fase 1): Import factory + tag + manifest UI
+// ===================================================================
+const slug = (s) => (s || "").toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "") || "factory";
+function sceneMaxX() {                                    // untuk auto-offset factory berikutnya ke kanan
+  let m = -Infinity;
+  objects.forEach((o) => {
+    if (o.type === "floor") m = Math.max(m, (o.data.x || 0) + (o.data.w || 0) / 2);
+    else if (o.type === "wall") (o.data.points || []).forEach((p) => (m = Math.max(m, p[0])));
+    else m = Math.max(m, o.obj.position.x);
+  });
+  return isFinite(m) ? m : 0;
+}
+$("btnImport").onclick = () => $("fileImport").click();
+$("fileImport").onchange = (e) => {
+  const f = e.target.files[0]; e.target.value = "";
+  if (!f) return;
+  f.text().then((t) => {
+    let json; try { json = JSON.parse(t); } catch { return toast("JSON tidak valid", false); }
+    openImportDialog(f.name.replace(/\.json$/i, ""), json);
+  });
+};
+function openImportDialog(defName, json) {
+  const autoX = objects.length ? Math.round(sceneMaxX() + 15) : 0;   // taruh di kanan konten yang ada + jeda 15m
+  const wrap = document.createElement("div");
+  wrap.className = "imp-modal";
+  wrap.innerHTML =
+    `<div class="imp-card">
+      <h3 style="margin:0 0 10px">Import factory ke kawasan</h3>
+      <div class="row"><label>Nama factory</label><input id="impFac" type="text" value="${escapeHtml(defName)}"></div>
+      <div class="row"><label>Lantai (opsional)</label><input id="impFloor" type="text" placeholder="mis. Lantai 2 — kosongkan bila 1 lantai"></div>
+      <div class="row"><label>Offset X (m)</label><input id="impX" type="number" value="${autoX}" step="1"></div>
+      <div class="row"><label>Offset Z (m)</label><input id="impZ" type="number" value="0" step="1"></div>
+      <div class="row"><label>Offset Y (m)</label><input id="impY" type="number" value="0" step="0.5" title="isi >0 untuk lantai bertumpuk"></div>
+      <div class="hint">Objek yang di-import dicap factory ini. Factory diletakkan bersebelahan (atur Offset X). Untuk lantai-2 factory yang sama: pakai nama factory yang sama + isi Lantai + Offset Y.</div>
+      <div class="row" style="gap:6px;margin-top:10px">
+        <button class="btn" id="impCancel" style="flex:1">Batal</button>
+        <button class="btn primary" id="impOk" style="flex:1">Import</button>
+      </div>
+    </div>`;
+  document.body.appendChild(wrap);
+  const close = () => wrap.remove();
+  $("impCancel").onclick = close;
+  wrap.addEventListener("click", (ev) => { if (ev.target === wrap) close(); });
+  $("impOk").onclick = () => {
+    const facName = ($("impFac").value || "").trim() || defName;
+    const fid = slug(facName);
+    const floorName = ($("impFloor").value || "").trim();
+    const off = { x: +$("impX").value || 0, y: +$("impY").value || 0, z: +$("impZ").value || 0 };
+    let fac = factories.find((x) => x.id === fid);
+    if (!fac) { fac = { id: fid, name: facName }; factories.push(fac); }
+    let floorId;
+    if (floorName) {
+      const flid = slug(floorName); fac.floors = fac.floors || [];
+      if (!fac.floors.find((x) => x.id === flid)) fac.floors.push({ id: flid, name: floorName, y: off.y });
+      floorId = flid;
+    }
+    pushHistory();
+    addScene(json, { factory: fid, floor: floorId }, off);
+    activeFactory = "";   // objek baru (jalan) default Kawasan; pilih factory di dropdown bila mau gambar ke dalamnya
+    refreshFactoryUI();
+    close(); toast(`Factory "${facName}" di-import`, true);
+  };
+}
+function refreshFactoryUI() {
+  const sel = $("activeFactorySel");
+  if (sel) {
+    sel.innerHTML = `<option value="">Kawasan (jalan/umum)</option>` + factories.map((f) => `<option value="${f.id}">${escapeHtml(f.name)}</option>`).join("");
+    sel.value = activeFactory;
+    sel.onchange = () => { activeFactory = sel.value; };
+  }
+  const list = $("factoryList");
+  if (!list) return;
+  if (!factories.length) { list.innerHTML = `<div class="hint">Belum ada factory. Klik <b>➕ Import factory</b>.</div>`; return; }
+  list.innerHTML = factories.map((f) => {
+    const n = objects.filter((o) => o.data.factory === f.id).length;
+    const fl = (f.floors || []).length ? ` · ${f.floors.length} lantai` : "";
+    return `<div class="fac-row" data-id="${f.id}"><span class="fac-nm">${escapeHtml(f.name)}</span><small>(${n} objek${fl})</small>
+      <span class="fac-acts">
+        <button data-act="nudge" data-d="-1,0" title="Geser kiri">◀</button>
+        <button data-act="nudge" data-d="1,0" title="Geser kanan">▶</button>
+        <button data-act="nudge" data-d="0,-1" title="Geser maju">▲</button>
+        <button data-act="nudge" data-d="0,1" title="Geser mundur">▼</button>
+        <button data-act="rename" title="Ubah nama">✎</button></span></div>`;
+  }).join("");
+  list.querySelectorAll("button").forEach((b) => (b.onclick = () => facAction(b.closest(".fac-row").dataset.id, b.dataset.act, b.dataset.d)));
+}
+function facAction(fid, act, d) {
+  const fac = factories.find((x) => x.id === fid); if (!fac) return;
+  if (act === "rename") { const nm = prompt("Nama factory:", fac.name); if (nm && nm.trim()) { fac.name = nm.trim(); refreshFactoryUI(); } return; }
+  if (act === "nudge") { const [dx, dz] = d.split(",").map(Number); const STEP = 2; pushHistory(); objects.filter((o) => o.data.factory === fid).forEach((rec) => moveRecordXZ(rec, dx * STEP, dz * STEP)); }
+}
+function moveRecordXZ(rec, dx, dz) {
+  const d = rec.data;
+  if (rec.type === "floor") { d.x = (d.x || 0) + dx; d.z = (d.z || 0) + dz; rebuildFloor(rec); }
+  else if (rec.type === "wall") { d.points = (d.points || []).map((p) => [p[0] + dx, p[1] + dz]); rebuildWall(rec); }
+  else { rec.obj.position.x += dx; rec.obj.position.z += dz; }
+}
+refreshFactoryUI();
 
 // Terapkan transform model (kompatibel format lama rotationY/scalar & baru array)
 function applyModelTransform(root, d) {
@@ -1017,20 +1124,43 @@ function clearAll() {
 }
 function loadSceneJSON(s) {
   clearAll();
-  (s.walls || []).forEach((d) => { if (!d.openings) d.openings = []; addObject("wall", buildWallGroup(d), d); });
-  (s.floors || []).forEach((d) => { floorOrder = Math.max(floorOrder, d.order || 0); addObject("floor", buildFloor(d), d); });
-  (s.pins || []).forEach((d) => { const g = buildPin(); g.position.set(d.x, 0, d.z); addObject("pin", g, { ip: d.ip, label: d.label }); });
-  (s.texts || []).forEach((d) => addObject("text", makeTextSprite(d), { ...d }));
-  (s.models || []).forEach((d) => {
-    loader.load(d.url, (gltf) => {
-      const root = gltf.scene;
-      root.traverse((o) => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; } });
-      applyModelTransform(root, d);
-      addObject("model", root, { url: d.url, name: d.name, deviceIp: d.deviceIp || "" });
-    }, undefined, () => toast("Model tak ditemukan: " + d.url, false));
-  });
+  activeFactory = "";   // jangan cemari objek tanpa-tag (jalan kawasan) saat load
+  factories = Array.isArray(s.factories) ? JSON.parse(JSON.stringify(s.factories)) : [];
+  addScene(s);
   if (s.lighting) { Object.assign(lighting, s.lighting); syncLightUI(); applyLighting(); }
   if (s.camera && s.camera.position) { camera.position.fromArray(s.camera.position); controls.target.fromArray(s.camera.target); controls.update(); }
+  refreshFactoryUI();
+}
+// Tambah isi scene `s` ke scene sekarang (TANPA clear). tag={factory,floor} → cap; off={x,y,z} → geser. Dipakai load (tag/off kosong) & import.
+function addScene(s, tag, off) {
+  tag = tag || {}; off = off || { x: 0, y: 0, z: 0 };
+  const T = (d) => { if (tag.factory) d.factory = tag.factory; if (tag.floor) d.floor = tag.floor; return d; };   // cap import (override)
+  (s.walls || []).forEach((d0) => {
+    const d = T({ ...d0, openings: d0.openings || [], points: (d0.points || []).map((p) => [p[0] + off.x, p[1] + off.z]), baseY: (d0.baseY || 0) + off.y });
+    addObject("wall", buildWallGroup(d), d);
+  });
+  (s.floors || []).forEach((d0) => {
+    const d = T({ ...d0, x: (d0.x || 0) + off.x, z: (d0.z || 0) + off.z, elev: (d0.elev || 0) + off.y });
+    floorOrder = Math.max(floorOrder, d.order || 0);
+    addObject("floor", buildFloor(d), d);
+  });
+  (s.pins || []).forEach((d0) => {
+    const g = buildPin(); g.position.set((d0.x || 0) + off.x, off.y || 0, (d0.z || 0) + off.z);
+    addObject("pin", g, T({ ip: d0.ip, label: d0.label, factory: d0.factory, floor: d0.floor }));
+  });
+  (s.texts || []).forEach((d0) => {
+    const d = { ...d0, x: (d0.x || 0) + off.x, y: (d0.y || 0) + off.y, z: (d0.z || 0) + off.z };
+    addObject("text", makeTextSprite(d), T(d));
+  });
+  (s.models || []).forEach((d0) => {
+    loader.load(d0.url, (gltf) => {
+      const root = gltf.scene;
+      root.traverse((o) => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; } });
+      applyModelTransform(root, d0);
+      root.position.x += off.x; root.position.y += off.y || 0; root.position.z += off.z;
+      addObject("model", root, T({ url: d0.url, name: d0.name, deviceIp: d0.deviceIp || "", factory: d0.factory, floor: d0.floor }));
+    }, undefined, () => toast("Model tak ditemukan: " + d0.url, false));
+  });
 }
 
 // =====================================================================

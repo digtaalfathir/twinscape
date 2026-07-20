@@ -37,11 +37,13 @@
     <span class="spacer"></span>
     <button class="btn" id="btnNew">Baru</button>
     <button class="btn" id="btnLoad">Muat scene.json</button>
+    <button class="btn" id="btnImport" title="Impor scene factory ke kawasan (gabung, tak mengganti)">➕ Import factory</button>
     <button class="btn primary" id="btnSave">💾 Simpan scene.json</button>
     <button class="btn" id="btnGen2D" title="Buat layout2d.json otomatis dari scene 3D ini (top-down)">🗺️ Generate 2D</button>
     <input type="file" id="fileModel" accept=".glb,.gltf" hidden>
     <input type="file" id="fileDenah" accept="image/*" hidden>
     <input type="file" id="fileScene" accept=".json,application/json" hidden>
+    <input type="file" id="fileImport" accept=".json,application/json" hidden>
   </div>
 
   <!-- ===== VIEWPORT ===== -->
@@ -63,6 +65,15 @@
         <button class="btn" id="btnFloorFull" style="flex:1">Lantai penuh</button>
       </div>
       <div class="hint">Kotak putus-putus = ukuran standar. Pakai tombol ini agar semua gedung seukuran & konsisten.</div>
+    </div>
+
+    <!-- Kawasan (Fase 1): multi-factory -->
+    <div class="sec" id="secKawasan">
+      <h3>Kawasan (Factory)</h3>
+      <div class="row"><label>Gambar utk</label>
+        <select id="activeFactorySel"><option value="">Kawasan (jalan/umum)</option></select></div>
+      <div id="factoryList" style="margin-top:8px"></div>
+      <div class="hint">Klik <b>➕ Import factory</b> (toolbar) untuk gabungkan scene factory. Objek baru yang digambar ditandai sesuai "Gambar utk"; jalan penghubung biarkan <b>Kawasan</b>.</div>
     </div>
 
     <!-- Model catalog (B4) -->
