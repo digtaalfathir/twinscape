@@ -192,7 +192,7 @@ function showGfxChip() {
   if (!lite || document.getElementById("gfxChip")) return;
   const c = document.createElement("div");
   c.id = "gfxChip"; c.className = "gfx-chip";
-  c.textContent = "⚡ " + t("gfx_lite", "Lite");
+  c.textContent = t("gfx_lite", "Lite");
   c.title = t("gfx_chip_title", "Lite graphics active — click to change");
   c.onclick = () => { const m = document.getElementById("menuBtn"); if (m) m.click(); };
   const vt = document.querySelector(".view-toggle");      // taruh di kiri toggle 3D|2D (sebaris)
@@ -265,8 +265,8 @@ function initThree() {
 
   renderer = new THREE.WebGLRenderer({ canvas, antialias: !lite, powerPreference: "high-performance" });
   sharpDPR = lite ? 1 : Math.min(window.devicePixelRatio, 2);   // resolusi penuh saat diam (kembali ke semula)
-  softDPR = Math.max(0.75, sharpDPR * 0.7);                      // sedikit lembut saat kamera bergerak (retina 2→1.4)
-  renderer.setPixelRatio(sharpDPR);
+  softDPR = Math.max(1, sharpDPR * 0.8);                         // saat gerak: pangkas oversampling SAJA, tak pernah < native.
+  renderer.setPixelRatio(sharpDPR);                              //   high-DPI (2→1.6): sedikit kurang crisp, hemat fill; layar biasa (1→1): tetap tajam (no-op)
   renderer.setSize(w, h);
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
   renderer.localClippingEnabled = true;   // aktifkan clip per-material (motong model nembus lantai)
