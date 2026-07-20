@@ -43,7 +43,8 @@ let modelsPending = 0, sceneReadyFired = false, readyTimer = null;   // #1: spla
 let wsRetry = 2000, lastDataAt = 0;   // #2 reconnect backoff+jitter · #3 deteksi data basi
 const STALE_MS = 25000;               // data dianggap "basi" bila tak ada payload selama ini
 let lite = false, frameMs = 0, lastFrame = 0;   // #4 mode ringan (grafis hemat GPU) + cap FPS
-let baseDPR = 1, curDPR = 1, dprSmooth = 16.7, dprCooldown = 0;   // perf: resolusi adaptif (jaga frame-time stabil)
+let sharpDPR = 1, softDPR = 1, dprSoft = false;   // perf: tajam saat diam, sedikit lembut saat kamera bergerak
+let dirty = true, lastRender = 0, lastMove = 0, dimActive = false, downTotal = 0;   // perf: render-on-demand (jangan render kalau tak ada yg berubah)
 let fpsWarm = 0, fpsStart = 0, fpsFrames = 0, fpsLast = 0, fpsDone = false;   // pengukur FPS → saran Ringan
 let camAnim = null, savedCam = null, lastT = 0;   // klik→zoom ke titik, tutup→balik
 const modelCache = {};      // A2: url -> Promise<gltf.scene> (load-once, lalu clone)
@@ -112,6 +113,7 @@ function applyDimState() {
   }
   updateSummary();   // Fase 4: angka panel ikut konteks (All ⇄ fokus)
   updateHint();
+  dimActive = true; dirty = true;   // perf: bangunkan loop utk animasi redup + render
 }
 let locSubBase = "", hintBase = null;   // subtitle & hint dasar (dipulihkan saat kembali ke All)
 function updateHint() {   // Fase 4: subtitle panel + hint bawah menyesuaikan All vs fokus
@@ -262,9 +264,9 @@ function initThree() {
   camera.position.set(28, 24, 32);
 
   renderer = new THREE.WebGLRenderer({ canvas, antialias: !lite, powerPreference: "high-performance" });
-  baseDPR = lite ? 1 : Math.min(window.devicePixelRatio, 1.5);   // #4/perf: cap 1.5 (turun dari 2) → lebih sedikit fragment, lebih smooth
-  curDPR = baseDPR;
-  renderer.setPixelRatio(curDPR);
+  sharpDPR = lite ? 1 : Math.min(window.devicePixelRatio, 2);   // resolusi penuh saat diam (kembali ke semula)
+  softDPR = Math.max(0.75, sharpDPR * 0.7);                      // sedikit lembut saat kamera bergerak (retina 2→1.4)
+  renderer.setPixelRatio(sharpDPR);
   renderer.setSize(w, h);
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
   renderer.localClippingEnabled = true;   // aktifkan clip per-material (motong model nembus lantai)
@@ -288,6 +290,9 @@ function initThree() {
   controls.dampingFactor = 0.09;
   controls.maxPolarAngle = Math.PI * 0.495;
   controls.target.set(0, 1, 0);
+  // perf: bangunkan loop & tandai "sedang bergerak" saat interaksi (drag/zoom/damping). "start" = pointer/wheel down, "change" = tiap update.
+  controls.addEventListener("start", () => { lastMove = performance.now(); dirty = true; });
+  controls.addEventListener("change", () => { lastMove = performance.now(); dirty = true; });
 
   hemi = new THREE.HemisphereLight(0x9fb4d8, 0x0a0e1a, 0.45);
   amb = new THREE.AmbientLight(0x1a2436, 0.22);
@@ -326,8 +331,14 @@ function animate(now) {
   requestAnimationFrame(animate);
   if (glLost || renderPaused) return;   // jangan render saat context hilang / tab tersembunyi
   if (frameMs && now && now - lastFrame < frameMs) return;   // #4: batasi FPS di mode ringan
-  const frameDt = (now && lastFrame) ? now - lastFrame : 16.7;   // ms antar-frame yg benar-benar dirender
-  lastFrame = now || 0;
+  const nowMs = now || 0;
+  // render-on-demand: hanya render kalau ada yg berubah (dirty), sedang bergerak, dim beranimasi, atau ada device DOWN (halo berdenyut).
+  // Kalau benar-benar diam → lewati (heartbeat ~4fps sbg pengaman). Hemat GPU → adem, stabil, & headroom penuh saat digerakkan.
+  const moving = !!camAnim || (nowMs - lastMove < 220);
+  const active = moving || dimActive || downTotal > 0;
+  if (!dirty && !active && nowMs - lastRender < 250) return;
+  lastFrame = nowMs; lastRender = nowMs; dirty = false;
+  setQuality(moving);                    // lembut saat bergerak, tajam saat diam (ganti resolusi HANYA di transisi, jadi tak kedip)
   const t = clock ? clock.getElapsedTime() : 0;
   const dt = Math.min(0.1, t - lastT); lastT = t;
   for (const ip in deviceObjs) {
@@ -343,14 +354,15 @@ function animate(now) {
       o.bc.halo.material.opacity = 0.1 * df;
     }
   }
-  for (const f of districtFactories) {   // Fase 2/3: animasikan redup tiap grup (factory,lantai) menuju target
-    for (const key in f.groups) {
-      const g = f.groups[key];
-      if (Math.abs(g.cur - g.target) > 0.004) {
-        g.cur += (g.target - g.cur) * Math.min(1, dt * 6);
-        applyGroupDim(g, g.cur);
+  if (dimActive) {                        // Fase 2/3: animasikan redup grup — jalan hanya saat masih ada yg bergerak menuju target
+    let any = false;
+    for (const f of districtFactories) {
+      for (const key in f.groups) {
+        const g = f.groups[key];
+        if (Math.abs(g.cur - g.target) > 0.004) { g.cur += (g.target - g.cur) * Math.min(1, dt * 6); applyGroupDim(g, g.cur); any = true; }
       }
     }
+    dimActive = any;
   }
   if (camAnim) {
     camAnim.t += dt / camAnim.dur;
@@ -364,27 +376,18 @@ function animate(now) {
   }
   renderer.render(scene, camera);
   labelRenderer.render(scene, camera);
-  adaptResolution(frameDt);              // perf: auto turun/naik resolusi supaya frame-time tetap halus
-  measureFps(now);                       // saran mode Ringan bila FPS nyata rendah (mode Auto saja)
+  if (active) measureFps(now);           // ukur FPS hanya saat aktif (gerak/animasi) — jangan hitung frame idle heartbeat
 }
-// Resolusi adaptif — kalau frame berat, turunkan pixelRatio (gambar sedikit lebih lembut tapi lancar);
-// kalau lega, naikkan lagi sampai baseDPR. Menjaga kelancaran di hardware apa pun tanpa perlu diatur manual.
-// ponytail: heuristik EMA sederhana + cooldown; kalau butuh lebih presisi baru pakai kurva/pengukuran GPU.
-function adaptResolution(frameDt) {
-  if (frameDt <= 0 || frameDt > 500) return;                // abaikan lonjakan (tab kembali, hitch besar)
-  dprSmooth += (frameDt - dprSmooth) * 0.1;                 // rata-rata bergerak
-  if (dprCooldown > 0) { dprCooldown--; return; }           // beri jeda tiap ganti resolusi (hindari osilasi)
-  const budget = frameMs || 16.7;                           // target: pakai cap FPS bila ada, else ~60fps
-  if (dprSmooth > budget * 1.35 && curDPR > 0.6) {          // berat → turunkan
-    curDPR = Math.max(0.6, curDPR - 0.15); renderer.setPixelRatio(curDPR); dprCooldown = 45;
-  } else if (dprSmooth < budget * 1.05 && curDPR < baseDPR) {   // lega → naikkan bertahap
-    curDPR = Math.min(baseDPR, curDPR + 0.1); renderer.setPixelRatio(curDPR); dprCooldown = 90;
-  }
+function setQuality(moving) {   // resolusi cukup 2 keadaan (diam=tajam, gerak=lembut); ganti hanya saat transisi → tak ada kedip berkala
+  if (moving === dprSoft) return;
+  dprSoft = moving;
+  renderer.setPixelRatio(moving ? softDPR : sharpDPR);
 }
 function onResize() {
   const w = stage.clientWidth, h = stage.clientHeight;
   camera.aspect = w / h; camera.updateProjectionMatrix();
   renderer.setSize(w, h); labelRenderer.setSize(w, h);
+  dirty = true;
 }
 
 // =====================================================================
@@ -566,6 +569,7 @@ function buildFromScene(s) {
   const params = new URLSearchParams(location.search);
   const wantFac = params.get("factory"), wantFloor = params.get("floor");
   if (wantFac && facById[wantFac]) { selectFactory(wantFac); if (wantFloor) selectFloor(wantFloor); }   // deep-link ?factory=&floor=
+  dirty = true;   // perf: scene baru → render sekali
 }
 
 function applyLighting(L) {
@@ -808,6 +812,7 @@ function addModel(d) {
       updateSummary();   // model .glb load async → refresh hitungan saat beacon-nya siap
     }
     if (d.factory) syncFactoryDimFor(d.factory);   // samakan redup model async dgn fokus aktif (tanpa gerakkan kamera)
+    dirty = true;      // perf: model async muncul → render sekali
     markModelDone();   // #1
   }).catch(() => { console.warn("model tak ditemukan:", d.url); markModelDone(); });
 }
@@ -831,6 +836,8 @@ function applyStatus(devices) {
   if (selectedIp && deviceByIp[selectedIp]) renderDetail(deviceByIp[selectedIp]);
   updateSummary();
   applyFilter();   // E4: pertahankan sorotan filter saat status berubah
+  downTotal = 0; for (const ip in deviceObjs) if (deviceObjs[ip].status === "DOWN") downTotal++;   // perf: ada DOWN → halo berdenyut → loop tetap render
+  dirty = true;
 }
 
 // E4 — filter status: redupkan beacon yang tak cocok (Semua/Up/Down)
@@ -845,6 +852,7 @@ function applyFilter() {
     o.dimmed = !beaconMatches(o);   // filter status; renderBeacon gabungkan dgn redup konteks (dimF)
     renderBeacon(o);
   }
+  dirty = true;
 }
 function sevIcon(sev) { return sev === "CRITICAL" || sev === "HIGH" ? "▲" : sev === "MEDIUM" ? "◆" : "•"; }
 
@@ -950,7 +958,7 @@ function bindInteraction() {
   canvas.addEventListener("pointerleave", hideTooltip);
 
   const rv = $("resetView"); if (rv) rv.onclick = () => { camera.position.set(28, 24, 32); controls.target.set(0, 1, 0); controls.update(); };
-  const tl = $("toggleLabels"); if (tl) tl.onclick = () => { labelsVisible = !labelsVisible; labelEls.forEach((el) => (el.style.display = labelsVisible ? "" : "none")); };
+  const tl = $("toggleLabels"); if (tl) tl.onclick = () => { labelsVisible = !labelsVisible; labelEls.forEach((el) => (el.style.display = labelsVisible ? "" : "none")); dirty = true; };
   document.addEventListener("keydown", (e) => {   // Esc: tutup detail dulu; kalau tak ada & sedang fokus factory → kembali ke All
     if (e.key !== "Escape") return;
     if (selectedIp) { closeDetail(); return; }
@@ -1002,6 +1010,7 @@ document.addEventListener("pointermove", (e) => { if (tooltip.classList.contains
 function startCamAnim(toP, toT) {
   camAnim = { fromP: camera.position.clone(), toP, fromT: controls.target.clone(), toT, t: 0, dur: 0.5 };
   controls.enabled = false;
+  dirty = true;   // perf: bangunkan loop utk animasi kamera
 }
 function focusOn(worldPos) {
   if (!savedCam) savedCam = { pos: camera.position.clone(), target: controls.target.clone() };
