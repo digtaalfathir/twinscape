@@ -96,7 +96,9 @@ function applyGroupDim(g, op) {   // skala opacity relatif thd nilai asli (jaga 
     (Array.isArray(o.material) ? o.material : [o.material]).forEach((m) => {
       if (!m) return;
       if (m.userData._op0 === undefined) m.userData._op0 = m.opacity;
-      m.transparent = op < 0.999 || m.userData._op0 < 0.999;
+      // Aktifkan transparansi SEKALI (butuh recompile) lalu biarkan. JANGAN flip balik ke opaque:
+      // flip opaque→transparent tanpa needsUpdate kadang tak ter-render transparan → bug "pindah factory tak redup".
+      if ((op < 0.999 || m.userData._op0 < 0.999) && !m.transparent) { m.transparent = true; m.needsUpdate = true; }
       m.opacity = m.userData._op0 * op;
     });
   }));
