@@ -15,6 +15,9 @@ const pinByIp = {};         // ip -> pin {x,y,label}
 const lastStatus = {};      // ip -> status sebelumnya (deteksi transisi utk alert E8)
 let selectedIp = null, dtTimer = null, filterMode = "all", alertBaseline = false;
 let zones2d = [], roomEls = [];   // E2/E7 — zona = ruangan (rect utk warna)
+// Kawasan 2D — grup objek per factory + fokus/dim (mirror 3D). factory = {id,name,viewBox}
+let districtFactories = [], facById = {}, focusedFactory = "", facGroups = {};   // fid -> {fp:<g>, mk:<g>}
+let baseViewBox = [0, 0, 1120, 780], locSubBase = "";
 const ZONE_TINT = false;          // E7 pewarnaan ruangan saat DOWN — dimatikan sementara (set true utk aktifkan)
 let wsRetry = 2000, lastDataAt = 0;   // #2 reconnect backoff+jitter · #3 data basi
 const STALE_MS = 25000;
@@ -56,7 +59,7 @@ async function resolveLocation() {
 async function loadLayout() {
   const param = new URLSearchParams(location.search).get("layout");
   const url = param || (activeFloor && activeFloor.layout2d) || (activeLoc && activeLoc.layout2d) || "/layout2d.json";
-  const setSub = (t) => { const s = $("locSub"); if (s) s.textContent = t; };
+  const setSub = (t) => { locSubBase = t; const s = $("locSub"); if (s && !focusedFactory) s.textContent = t; };
   let L = await tryFetch(url);
   if (L) setSub(activeFloor ? activeFloor.name : "Live monitoring");
   if (!L && !param) { L = await tryFetch("/layout2d.example.json"); if (L) setSub(activeFloor ? activeFloor.name + " · contoh" : "Denah contoh"); }   // auto-fallback
@@ -69,45 +72,115 @@ async function loadLayout() {
     connect();       // tetap sambungkan WS supaya summary tetap jalan
     return;
   }
-  if (Array.isArray(L.viewBox)) svg.setAttribute("viewBox", L.viewBox.join(" "));
+  if (Array.isArray(L.viewBox)) { baseViewBox = L.viewBox.slice(); svg.setAttribute("viewBox", L.viewBox.join(" ")); }
   buildFloorplan(L);
   buildPins(L.pins || []);
   buildZones(L);
+  buildFactorySelector2d();
+  const wantFac = new URLSearchParams(location.search).get("factory");
+  if (wantFac && facById[wantFac]) selectFactory2d(wantFac, true);   // deep-link ?factory= (instant saat load)
   connect();
+}
+
+// ===================================================================
+//  KAWASAN 2D — selektor factory (All ⇄ fokus) + zoom viewBox + dim <g>
+// ===================================================================
+function inScope(p) { return !focusedFactory || p.factory === focusedFactory; }
+function buildFactorySelector2d() {
+  let nav = document.getElementById("factoryNav");
+  if (!districtFactories.length) { if (nav) nav.remove(); return; }
+  if (!nav) {
+    nav = document.createElement("div");
+    nav.id = "factoryNav"; nav.className = "factory-nav";
+    nav.innerHTML = `<span class="fn-lbl">${t("factory", "Factory")}</span><select id="factorySel"></select>`;
+    stage.appendChild(nav);
+    nav.querySelector("select").addEventListener("change", (e) => selectFactory2d(e.target.value));
+  }
+  const sel = document.getElementById("factorySel");
+  sel.innerHTML = `<option value="">${t("all_factories", "All")}</option>` +
+    districtFactories.map((f) => `<option value="${f.id}">${(f.name || f.id).replace(/</g, "&lt;")}</option>`).join("");
+  sel.value = focusedFactory;
+}
+function selectFactory2d(id, instant) {
+  focusedFactory = id && facById[id] ? id : "";
+  const sel = document.getElementById("factorySel"); if (sel) sel.value = focusedFactory;
+  districtFactories.forEach((f) => {                 // redup factory lain (opacity <g> + CSS transition)
+    const op = (!focusedFactory || f.id === focusedFactory) ? "1" : "0.18";
+    const g = facGroups[f.id]; if (g) { if (g.fp) g.fp.style.opacity = op; if (g.mk) g.mk.style.opacity = op; }
+  });
+  animateViewBox(focusedFactory ? padVB(facById[focusedFactory].viewBox) : baseViewBox, instant);
+  const u = new URL(location.href);
+  focusedFactory ? u.searchParams.set("factory", focusedFactory) : u.searchParams.delete("factory");
+  history.replaceState(null, "", u);
+  const sub = $("locSub"); if (sub) sub.textContent = focusedFactory ? (facById[focusedFactory].name || focusedFactory) : locSubBase;
+  updateSummary();   // angka panel ikut konteks
+}
+function padVB(vb) { const [x, y, w, h] = vb; const px = w * 0.06, py = h * 0.06; return [x - px, y - py, w + px * 2, h + py * 2]; }
+let vbAnim = null;
+function animateViewBox(target, instant) {
+  const from = (svg.getAttribute("viewBox") || baseViewBox.join(" ")).split(/\s+/).map(Number);
+  if (instant || from.length !== 4) { svg.setAttribute("viewBox", target.join(" ")); return; }
+  const t0 = performance.now(), dur = 420;
+  cancelAnimationFrame(vbAnim);
+  const step = (now) => {
+    const k = Math.min(1, (now - t0) / dur), e = k * k * (3 - 2 * k);   // smoothstep
+    svg.setAttribute("viewBox", from.map((v, i) => v + (target[i] - v) * e).join(" "));
+    if (k < 1) vbAnim = requestAnimationFrame(step);
+  };
+  vbAnim = requestAnimationFrame(step);
 }
 
 function buildFloorplan(L) {
   // keep the dotgrid background rect (first child of viewport); rebuild floorplan group
   floorplanG.innerHTML = "";
   roomEls = [];
+  facGroups = {};
+  districtFactories = (L.factories || []).map((f) => ({ id: f.id, name: f.name, viewBox: f.viewBox || [0, 0, 1120, 780] }));
+  facById = {}; focusedFactory = "";
+  districtFactories.forEach((f) => (facById[f.id] = f));
+  const fpG = (fid) => {   // sub-<g> per factory (utk redup); kawasan-level (tanpa factory) → langsung ke floorplan
+    if (!fid || !facById[fid]) return floorplanG;
+    if (!facGroups[fid]) facGroups[fid] = {};
+    if (!facGroups[fid].fp) { const g = mk("g", { class: "fac2d", "data-factory": fid }); floorplanG.appendChild(g); facGroups[fid].fp = g; }
+    return facGroups[fid].fp;
+  };
   (L.rooms || []).forEach((r) => {
+    const g = fpG(r.factory);
     const rect = mk("rect", { class: "lo-room", x: r.x, y: r.y, width: r.w, height: r.h, rx: 4,
       fill: r.color || "rgba(124,147,184,0.05)" });
-    floorplanG.appendChild(rect);
+    g.appendChild(rect);
     roomEls.push({ room: r, rect });
     if (r.label) {
       const t = mk("text", { class: "lo-label", x: r.x + r.w / 2, y: r.y + r.h / 2 });
       t.textContent = r.label;
-      floorplanG.appendChild(t);
+      g.appendChild(t);
     }
   });
   (L.walls || []).forEach((w) => {
+    const g = fpG(w.factory);
     const pts = (w.points || []).map((p) => p.join(",")).join(" ");
     const closeSeg = w.closed && (w.points || []).length > 2 ? " " + w.points[0].join(",") : "";
-    floorplanG.appendChild(mk("polyline", { class: "lo-wall", points: pts + closeSeg }));
+    g.appendChild(mk("polyline", { class: "lo-wall", points: pts + closeSeg }));
   });
 }
 
 function buildPins(pinList) {
-  Object.values(markerByIp).forEach((el) => el.remove());
+  markersG.innerHTML = "";   // buang marker + sub-grup factory lama
+  Object.values(facGroups).forEach((g) => { g.mk = null; });
   markerByIp = {}; pins = pinList;
   for (const k in pinByIp) delete pinByIp[k];
+  const mkG = (fid) => {   // sub-<g> marker per factory (utk redup, sejajar grup floorplan)
+    if (!fid || !facById[fid]) return markersG;
+    if (!facGroups[fid]) facGroups[fid] = {};
+    if (!facGroups[fid].mk) { const g = mk("g", { class: "fac2d", "data-factory": fid }); markersG.appendChild(g); facGroups[fid].mk = g; }
+    return facGroups[fid].mk;
+  };
   pinList.forEach((p) => {
     pinByIp[p.ip] = p;
     const el = makeMarker(p);
     el.setAttribute("transform", `translate(${p.x} ${p.y})`);
     setLabel(el, p.label || p.ip);
-    markersG.appendChild(el);
+    mkG(p.factory).appendChild(el);
     markerByIp[p.ip] = el;
   });
   applyStatus(Object.values(deviceByIp));
@@ -206,9 +279,10 @@ function mk(tag, attrs) {
 
 // Ringkasan dihitung dari PIN DI LAYOUT (bukan semua device yang dikirim WS).
 function updateSummary() {
-  const total = pins.length;
+  const scoped = pins.filter(inScope);   // kawasan: hanya factory aktif (All = semua)
+  const total = scoped.length;
   let up = 0, down = 0, unknown = 0;
-  pins.forEach((p) => {
+  scoped.forEach((p) => {
     const st = deviceByIp[p.ip] ? deviceByIp[p.ip].status : null;
     if (st === "UP") up++; else if (st === "DOWN") down++; else unknown++;
   });
@@ -438,6 +512,7 @@ function buildZones(L) {
   updateZones();
 }
 function updateZones() {
+  if (districtFactories.length) { const p = $("zonePanel"); if (p) { p.style.display = "none"; p.innerHTML = ""; } return; }   // kawasan: panel zona by-room lintas factory = bising → ringkasan ber-scope jadi sumber angka
   zones2d.forEach((z) => {
     let up = 0, down = 0;
     z.ips.forEach((ip) => { const d = deviceByIp[ip]; if (d && d.status === "UP") up++; else if (d && d.status === "DOWN") down++; });
