@@ -40,8 +40,11 @@ function promptHidden(question) {
   let role = null;
   const rf = args.indexOf("--role");
   if (rf >= 0) { role = (args[rf + 1] || "").trim(); args.splice(rf, 2); }   // --role <nama> (RBAC Fase 4)
+  let locs = null;
+  const lf = args.indexOf("--loc");   // --loc sugity  ·  --loc jmp,sugity  ·  --loc *  (akses lokasi; absen = semua)
+  if (lf >= 0) { const v = (args[lf + 1] || "").trim(); locs = v === "*" ? "*" : v.split(",").map((s) => s.trim()).filter(Boolean); args.splice(lf, 2); }
   const username = (args[0] || "").trim();
-  if (!username) { console.error("Pemakaian: node adduser.js <username> [password] [--role <role>]"); process.exit(1); }
+  if (!username) { console.error("Pemakaian: node adduser.js <username> [password] [--role <role>] [--loc <id,id|*>]"); process.exit(1); }
   let password = args[1];
   if (!password) {
     password = await promptHidden(`Password untuk "${username}": `);
@@ -54,10 +57,13 @@ function promptHidden(question) {
   const { salt, hash } = auth.hashPassword(password);
   const idx = users.findIndex((u) => u.username === username);
   const finalRole = role || (idx >= 0 ? users[idx].role : undefined);      // update password tak menghapus role lama
+  const finalLocs = locs != null ? locs : (idx >= 0 ? users[idx].locations : undefined);   // idem utk akses lokasi
   const rec = { username, salt, hash };
   if (finalRole) rec.role = finalRole;                                     // kosong → server pakai default 'viewer'
-  if (idx >= 0) { users[idx] = rec; console.log(`Akun "${username}" diperbarui${finalRole ? ` (role: ${finalRole})` : ""}.`); }
-  else { users.push(rec); console.log(`Akun "${username}" ditambahkan${finalRole ? ` (role: ${finalRole})` : ""}.`); }
+  if (finalLocs != null) rec.locations = finalLocs;                        // absen → semua lokasi; array → hanya yg terdaftar; "*" → semua
+  const extra = [finalRole ? `role: ${finalRole}` : null, finalLocs != null ? `loc: ${finalLocs === "*" ? "*" : finalLocs.join(",") || "(none)"}` : null].filter(Boolean).join(", ");
+  if (idx >= 0) { users[idx] = rec; console.log(`Akun "${username}" diperbarui${extra ? ` (${extra})` : ""}.`); }
+  else { users.push(rec); console.log(`Akun "${username}" ditambahkan${extra ? ` (${extra})` : ""}.`); }
   fs.writeFileSync(auth.USERS_FILE, JSON.stringify({ users }, null, 2) + "\n");
   console.log(`Total akun: ${users.length}  ·  ${auth.USERS_FILE}`);
   process.exit(0);
