@@ -16,7 +16,7 @@ const lastStatus = {};      // ip -> status sebelumnya (deteksi transisi utk ale
 let selectedIp = null, dtTimer = null, filterMode = "all", alertBaseline = false;
 let zones2d = [], roomEls = [];   // E2/E7 — zona = ruangan (rect utk warna)
 // Kawasan 2D — grup objek per factory + fokus/dim (mirror 3D). factory = {id,name,viewBox}
-let districtFactories = [], facById = {}, focusedFactory = "", facGroups = {};   // fid -> {fp:<g>, mk:<g>}
+let districtFactories = [], facById = {}, focusedFactory = "", activeFloor2d = "", facGroups = {};   // fid -> {fp,mk, ffp:{floor:<g>}, fmk:{floor:<g>}}
 let baseViewBox = [0, 0, 1120, 780], locSubBase = "";
 const ZONE_TINT = false;          // E7 pewarnaan ruangan saat DOWN — dimatikan sementara (set true utk aktifkan)
 let wsRetry = 2000, lastDataAt = 0;   // #2 reconnect backoff+jitter · #3 data basi
@@ -77,43 +77,92 @@ async function loadLayout() {
   buildPins(L.pins || []);
   buildZones(L);
   buildFactorySelector2d();
-  const wantFac = new URLSearchParams(location.search).get("factory");
-  if (wantFac && facById[wantFac]) selectFactory2d(wantFac, true);   // deep-link ?factory= (instant saat load)
+  applyFloorVis();   // factory berlantai → default tampil lantai-1 (walau All)
+  const params = new URLSearchParams(location.search);
+  const wantFac = params.get("factory"), wantFloor = params.get("floor");
+  if (wantFac && facById[wantFac]) { selectFactory2d(wantFac, true); if (wantFloor) selectFloor2d(wantFloor); }   // deep-link ?factory=&floor=
   connect();
 }
 
 // ===================================================================
 //  KAWASAN 2D — selektor factory (All ⇄ fokus) + zoom viewBox + dim <g>
 // ===================================================================
-function inScope(p) { return !focusedFactory || p.factory === focusedFactory; }
+function visibleFloor(fid) {   // 2D flat → tiap factory berlantai tampilkan SATU lantai: aktif (bila difokus) atau lantai-1
+  const floors = (facById[fid] && facById[fid].floors) || [];
+  if (floors.length < 2) return null;   // single-floor → tak ada swap
+  return (fid === focusedFactory && activeFloor2d) ? activeFloor2d : floors[0].id;
+}
+function inScope(p) {   // All = SEMUA device (semua lantai) → total benar (DOWN di lantai tersembunyi tak hilang dari hitungan); fokus = factory itu + lantai aktif
+  if (!focusedFactory) return true;
+  if (p.factory !== focusedFactory) return false;
+  const floors = (facById[focusedFactory] && facById[focusedFactory].floors) || [];
+  if (floors.length < 2 || !p.floor) return true;
+  return p.floor === activeFloor2d;
+}
+function applyFloorVis() {   // swap lantai: sembunyikan grup lantai yg tak tampil (per factory berlantai)
+  districtFactories.forEach((f) => {
+    const F = facGroups[f.id], showId = visibleFloor(f.id);
+    if (!F || !showId) return;
+    [F.ffp, F.fmk].forEach((map) => { if (map) for (const fl in map) map[fl].style.display = (fl === showId) ? "" : "none"; });
+  });
+}
 function buildFactorySelector2d() {
   let nav = document.getElementById("factoryNav");
   if (!districtFactories.length) { if (nav) nav.remove(); return; }
   if (!nav) {
     nav = document.createElement("div");
     nav.id = "factoryNav"; nav.className = "factory-nav";
-    nav.innerHTML = `<span class="fn-lbl">${t("factory", "Factory")}</span><select id="factorySel"></select>`;
+    nav.innerHTML = `<span class="fn-lbl">${t("factory", "Factory")}</span><select id="factorySel"></select>` +
+      `<span class="fn-floor" style="display:none"><span class="fn-sep"></span><span class="fn-lbl">${t("floor", "Floor")}</span><select id="floorSel2"></select></span>`;
     stage.appendChild(nav);
-    nav.querySelector("select").addEventListener("change", (e) => selectFactory2d(e.target.value));
+    nav.querySelector("#factorySel").addEventListener("change", (e) => selectFactory2d(e.target.value));
+    nav.querySelector("#floorSel2").addEventListener("change", (e) => selectFloor2d(e.target.value));
   }
   const sel = document.getElementById("factorySel");
   sel.innerHTML = `<option value="">${t("all_factories", "All")}</option>` +
     districtFactories.map((f) => `<option value="${f.id}">${(f.name || f.id).replace(/</g, "&lt;")}</option>`).join("");
   sel.value = focusedFactory;
+  updateFloorSelector2d();
+}
+function updateFloorSelector2d() {   // sub-selektor Lantai — hanya bila factory fokus punya ≥2 lantai (2D = swap, tanpa "All")
+  const wrap = document.querySelector("#factoryNav .fn-floor");
+  const fs = document.getElementById("floorSel2");
+  const floors = (facById[focusedFactory] && facById[focusedFactory].floors) || [];
+  if (!focusedFactory || floors.length < 2) { if (wrap) wrap.style.display = "none"; return; }
+  wrap.style.display = "";
+  fs.innerHTML = floors.map((fl) => `<option value="${fl.id}">${(fl.name || fl.id).replace(/</g, "&lt;")}</option>`).join("");
+  fs.value = activeFloor2d || floors[0].id;
 }
 function selectFactory2d(id, instant) {
   focusedFactory = id && facById[id] ? id : "";
   const sel = document.getElementById("factorySel"); if (sel) sel.value = focusedFactory;
+  const floors = (facById[focusedFactory] && facById[focusedFactory].floors) || [];
+  if (!floors.some((fl) => fl.id === activeFloor2d)) activeFloor2d = floors.length ? floors[0].id : "";   // default lantai-1
   districtFactories.forEach((f) => {                 // redup factory lain (opacity <g> + CSS transition)
     const op = (!focusedFactory || f.id === focusedFactory) ? "1" : "0.18";
     const g = facGroups[f.id]; if (g) { if (g.fp) g.fp.style.opacity = op; if (g.mk) g.mk.style.opacity = op; }
   });
+  updateFloorSelector2d();
+  applyFloorVis();
   animateViewBox(focusedFactory ? padVB(facById[focusedFactory].viewBox) : baseViewBox, instant);
+  writeDeepLink();
+  const sub = $("locSub"); if (sub) sub.textContent = focusedFactory ? (facById[focusedFactory].name || focusedFactory) + (activeFloor2d && floors.length > 1 ? " · " + (floors.find((x) => x.id === activeFloor2d) || {}).name : "") : locSubBase;
+  updateSummary();   // angka panel ikut konteks
+}
+function selectFloor2d(floorId) {
+  const floors = (facById[focusedFactory] && facById[focusedFactory].floors) || [];
+  activeFloor2d = floors.some((fl) => fl.id === floorId) ? floorId : (floors[0] && floors[0].id) || "";
+  const fs = document.getElementById("floorSel2"); if (fs) fs.value = activeFloor2d;
+  applyFloorVis();
+  writeDeepLink();
+  const sub = $("locSub"); if (sub && focusedFactory) sub.textContent = (facById[focusedFactory].name || focusedFactory) + (activeFloor2d ? " · " + ((floors.find((x) => x.id === activeFloor2d) || {}).name || activeFloor2d) : "");
+  updateSummary();
+}
+function writeDeepLink() {
   const u = new URL(location.href);
   focusedFactory ? u.searchParams.set("factory", focusedFactory) : u.searchParams.delete("factory");
+  (focusedFactory && activeFloor2d) ? u.searchParams.set("floor", activeFloor2d) : u.searchParams.delete("floor");
   history.replaceState(null, "", u);
-  const sub = $("locSub"); if (sub) sub.textContent = focusedFactory ? (facById[focusedFactory].name || focusedFactory) : locSubBase;
-  updateSummary();   // angka panel ikut konteks
 }
 function padVB(vb) { const [x, y, w, h] = vb; const px = w * 0.06, py = h * 0.06; return [x - px, y - py, w + px * 2, h + py * 2]; }
 let vbAnim = null;
@@ -135,17 +184,20 @@ function buildFloorplan(L) {
   floorplanG.innerHTML = "";
   roomEls = [];
   facGroups = {};
-  districtFactories = (L.factories || []).map((f) => ({ id: f.id, name: f.name, viewBox: f.viewBox || [0, 0, 1120, 780] }));
-  facById = {}; focusedFactory = "";
+  districtFactories = (L.factories || []).map((f) => ({ id: f.id, name: f.name, viewBox: f.viewBox || [0, 0, 1120, 780], floors: f.floors || [] }));
+  facById = {}; focusedFactory = ""; activeFloor2d = "";
   districtFactories.forEach((f) => (facById[f.id] = f));
-  const fpG = (fid) => {   // sub-<g> per factory (utk redup); kawasan-level (tanpa factory) → langsung ke floorplan
+  const fpG = (fid, floorId) => {   // sub-<g> per factory (redup) → per lantai (swap); kawasan-level → langsung ke floorplan
     if (!fid || !facById[fid]) return floorplanG;
-    if (!facGroups[fid]) facGroups[fid] = {};
-    if (!facGroups[fid].fp) { const g = mk("g", { class: "fac2d", "data-factory": fid }); floorplanG.appendChild(g); facGroups[fid].fp = g; }
-    return facGroups[fid].fp;
+    const F = facGroups[fid] || (facGroups[fid] = {});
+    if (!F.fp) { F.fp = mk("g", { class: "fac2d", "data-factory": fid }); floorplanG.appendChild(F.fp); }
+    if (!floorId) return F.fp;
+    F.ffp = F.ffp || {};
+    if (!F.ffp[floorId]) { const g = mk("g", { class: "floor2d", "data-floor": floorId }); F.fp.appendChild(g); F.ffp[floorId] = g; }
+    return F.ffp[floorId];
   };
   (L.rooms || []).forEach((r) => {
-    const g = fpG(r.factory);
+    const g = fpG(r.factory, r.floor);
     const rect = mk("rect", { class: "lo-room", x: r.x, y: r.y, width: r.w, height: r.h, rx: 4,
       fill: r.color || "rgba(124,147,184,0.05)" });
     g.appendChild(rect);
@@ -157,7 +209,7 @@ function buildFloorplan(L) {
     }
   });
   (L.walls || []).forEach((w) => {
-    const g = fpG(w.factory);
+    const g = fpG(w.factory, w.floor);
     const pts = (w.points || []).map((p) => p.join(",")).join(" ");
     const closeSeg = w.closed && (w.points || []).length > 2 ? " " + w.points[0].join(",") : "";
     g.appendChild(mk("polyline", { class: "lo-wall", points: pts + closeSeg }));
@@ -165,22 +217,25 @@ function buildFloorplan(L) {
 }
 
 function buildPins(pinList) {
-  markersG.innerHTML = "";   // buang marker + sub-grup factory lama
-  Object.values(facGroups).forEach((g) => { g.mk = null; });
+  markersG.innerHTML = "";   // buang marker + sub-grup factory/lantai lama
+  Object.values(facGroups).forEach((g) => { g.mk = null; g.fmk = null; });
   markerByIp = {}; pins = pinList;
   for (const k in pinByIp) delete pinByIp[k];
-  const mkG = (fid) => {   // sub-<g> marker per factory (utk redup, sejajar grup floorplan)
+  const mkG = (fid, floorId) => {   // sub-<g> marker per factory (redup) → per lantai (swap), sejajar grup floorplan
     if (!fid || !facById[fid]) return markersG;
-    if (!facGroups[fid]) facGroups[fid] = {};
-    if (!facGroups[fid].mk) { const g = mk("g", { class: "fac2d", "data-factory": fid }); markersG.appendChild(g); facGroups[fid].mk = g; }
-    return facGroups[fid].mk;
+    const F = facGroups[fid] || (facGroups[fid] = {});
+    if (!F.mk) { F.mk = mk("g", { class: "fac2d", "data-factory": fid }); markersG.appendChild(F.mk); }
+    if (!floorId) return F.mk;
+    F.fmk = F.fmk || {};
+    if (!F.fmk[floorId]) { const g = mk("g", { class: "floor2d", "data-floor": floorId }); F.mk.appendChild(g); F.fmk[floorId] = g; }
+    return F.fmk[floorId];
   };
   pinList.forEach((p) => {
     pinByIp[p.ip] = p;
     const el = makeMarker(p);
     el.setAttribute("transform", `translate(${p.x} ${p.y})`);
     setLabel(el, p.label || p.ip);
-    mkG(p.factory).appendChild(el);
+    mkG(p.factory, p.floor).appendChild(el);
     markerByIp[p.ip] = el;
   });
   applyStatus(Object.values(deviceByIp));

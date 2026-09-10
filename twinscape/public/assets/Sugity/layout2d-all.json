@@ -35,6 +35,16 @@
     0,
     1120,
     780
+   ],
+   "floors": [
+    {
+     "id": "l1",
+     "name": "Lantai 1"
+    },
+    {
+     "id": "l2",
+     "name": "Lantai 2"
+    }
    ]
   }
  ],
@@ -166,13 +176,6 @@
    "factory": "f2"
   },
   {
-   "x": 1120,
-   "y": 343.2,
-   "w": 180,
-   "h": 93.6,
-   "color": "rgba(120,132,156,0.12)"
-  },
-  {
    "x": 1825,
    "y": 40,
    "w": 69,
@@ -290,20 +293,14 @@
    "factory": "f3"
   },
   {
-   "x": 2420,
-   "y": 343.2,
-   "w": 180,
-   "h": 93.6,
-   "color": "rgba(120,132,156,0.12)"
-  },
-  {
    "x": 3195,
    "y": 40,
    "w": 69,
    "h": 693,
    "label": "",
    "color": "rgba(34,197,94,0.55)",
-   "factory": "f4"
+   "factory": "f4",
+   "floor": "l1"
   },
   {
    "x": 2709,
@@ -312,7 +309,8 @@
    "h": 69,
    "label": "",
    "color": "rgba(34,197,94,0.55)",
-   "factory": "f4"
+   "factory": "f4",
+   "floor": "l1"
   },
   {
    "x": 2709,
@@ -321,7 +319,8 @@
    "h": 624,
    "label": "",
    "color": "#1a7039",
-   "factory": "f4"
+   "factory": "f4",
+   "floor": "l1"
   },
   {
    "x": 2779,
@@ -330,7 +329,8 @@
    "h": 69,
    "label": "",
    "color": "rgba(34,197,94,0.55)",
-   "factory": "f4"
+   "factory": "f4",
+   "floor": "l1"
   },
   {
    "x": 2640,
@@ -339,7 +339,8 @@
    "h": 69,
    "label": "",
    "color": "rgba(34,197,94,0.55)",
-   "factory": "f4"
+   "factory": "f4",
+   "floor": "l1"
   },
   {
    "x": 3264,
@@ -348,7 +349,8 @@
    "h": 69,
    "label": "",
    "color": "rgba(34,197,94,0.55)",
-   "factory": "f4"
+   "factory": "f4",
+   "floor": "l1"
   },
   {
    "x": 2831,
@@ -357,7 +359,8 @@
    "h": 70,
    "label": "MESIN",
    "color": "rgba(120,140,170,0.5)",
-   "factory": "f4"
+   "factory": "f4",
+   "floor": "l1"
   },
   {
    "x": 2831,
@@ -366,7 +369,8 @@
    "h": 70,
    "label": "MESIN",
    "color": "rgba(120,140,170,0.5)",
-   "factory": "f4"
+   "factory": "f4",
+   "floor": "l1"
   },
   {
    "x": 2831,
@@ -375,7 +379,8 @@
    "h": 70,
    "label": "MESIN",
    "color": "rgba(120,140,170,0.5)",
-   "factory": "f4"
+   "factory": "f4",
+   "floor": "l1"
   },
   {
    "x": 3097,
@@ -384,7 +389,8 @@
    "h": 50,
    "label": "",
    "color": "rgba(120,140,170,0.5)",
-   "factory": "f4"
+   "factory": "f4",
+   "floor": "l1"
   },
   {
    "x": 3097,
@@ -393,7 +399,8 @@
    "h": 50,
    "label": "",
    "color": "rgba(120,140,170,0.5)",
-   "factory": "f4"
+   "factory": "f4",
+   "floor": "l1"
   },
   {
    "x": 3097,
@@ -402,7 +409,8 @@
    "h": 50,
    "label": "",
    "color": "rgba(120,140,170,0.5)",
-   "factory": "f4"
+   "factory": "f4",
+   "floor": "l1"
   },
   {
    "x": 2649,
@@ -411,7 +419,8 @@
    "h": 50,
    "label": "",
    "color": "rgba(120,140,170,0.5)",
-   "factory": "f4"
+   "factory": "f4",
+   "floor": "l1"
   },
   {
    "x": 3290,
@@ -420,7 +429,17 @@
    "h": 420,
    "label": "Area Rack Bumper",
    "color": "#27324e",
-   "factory": "f4"
+   "factory": "f4",
+   "floor": "l1"
+  },
+  {
+   "x": 2640,
+   "y": 40,
+   "w": 1040,
+   "h": 693,
+   "color": "rgba(96,165,250,0.05)",
+   "factory": "f4",
+   "floor": "l2"
   }
  ],
  "walls": [
@@ -488,7 +507,31 @@
     ]
    ],
    "closed": true,
-   "factory": "f4"
+   "factory": "f4",
+   "floor": "l1"
+  },
+  {
+   "points": [
+    [
+     2640,
+     40
+    ],
+    [
+     3680,
+     40
+    ],
+    [
+     3680,
+     733
+    ],
+    [
+     2640,
+     733
+    ]
+   ],
+   "closed": true,
+   "factory": "f4",
+   "floor": "l2"
   }
  ],
  "pins": [
@@ -553,28 +596,88 @@
    "y": 535,
    "ip": "172.19.88.8",
    "label": "DCS Inject 1",
-   "factory": "f4"
+   "factory": "f4",
+   "floor": "l1"
   },
   {
    "x": 3125,
    "y": 379,
    "ip": "172.19.88.9",
    "label": "DCS Inject 2",
-   "factory": "f4"
+   "factory": "f4",
+   "floor": "l1"
   },
   {
    "x": 3125,
    "y": 223,
    "ip": "172.19.88.10",
    "label": "DCS Inject 3",
-   "factory": "f4"
+   "factory": "f4",
+   "floor": "l1"
   },
   {
    "x": 2675,
    "y": 476,
    "ip": "172.19.88.5",
    "label": "DCS Material Input",
-   "factory": "f4"
+   "factory": "f4",
+   "floor": "l1"
+  },
+  {
+   "x": 3367,
+   "y": 364,
+   "ip": "172.19.88.31",
+   "label": "DCS Task Force",
+   "factory": "f4",
+   "floor": "l2"
+  },
+  {
+   "x": 3367,
+   "y": 258,
+   "ip": "172.19.88.24",
+   "label": "DCS Repair Out Line",
+   "factory": "f4",
+   "floor": "l2"
+  },
+  {
+   "x": 3367,
+   "y": 153,
+   "ip": "172.19.88.16",
+   "label": "DCS Touch Up",
+   "factory": "f4",
+   "floor": "l2"
+  },
+  {
+   "x": 3125,
+   "y": 276,
+   "ip": "172.19.88.29",
+   "label": "DCS Repair In Line",
+   "factory": "f4",
+   "floor": "l2"
+  },
+  {
+   "x": 2917,
+   "y": 136,
+   "ip": "172.19.88.30",
+   "label": "DCS QI",
+   "factory": "f4",
+   "floor": "l2"
+  },
+  {
+   "x": 2917,
+   "y": 434,
+   "ip": "172.19.88.19",
+   "label": "DCS Playmaker",
+   "factory": "f4",
+   "floor": "l2"
+  },
+  {
+   "x": 2796,
+   "y": 539,
+   "ip": "172.19.88.21",
+   "label": "DCS Mixing Material",
+   "factory": "f4",
+   "floor": "l2"
   }
  ]
 }
