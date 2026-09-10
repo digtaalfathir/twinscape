@@ -16,6 +16,8 @@
     const qs = new URLSearchParams();
     if (loc) qs.set("loc", loc);
     if (floor) qs.set("floor", floor);
+    const fac = new URLSearchParams(location.search).get("factory");   // kawasan: bawa factory fokus lintas 3D↔2D
+    if (fac) qs.set("factory", fac);
     qs.set("view", view);
     return `${page}?${qs.toString()}`;
   }

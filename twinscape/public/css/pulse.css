@@ -176,6 +176,8 @@ body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--t
 .factory-nav select:hover,.factory-nav select:focus{border-color:var(--accent)}
 .factory-nav .fn-floor{display:flex;align-items:center;gap:9px}
 .factory-nav .fn-sep{width:1px;height:20px;background:var(--border)}
+/* Kawasan 2D — grup factory (SVG <g>): fade halus saat fokus/redup */
+.fac2d{transition:opacity .4s ease}
 
 /* ---------- floating 3D labels (CSS2D) ---------- */
 .mk3d-label{font-family:'Inter',sans-serif;font-size:11px;font-weight:600;color:var(--text-bright);
