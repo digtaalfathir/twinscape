@@ -116,11 +116,17 @@ function resolveVNC(deviceKey) {                        // → {host,port,startC
 // device boleh punya "group". User punya "role" di users.json. Tanpa "roles" → RBAC off (perilaku Fase 3).
 const DEFAULT_ROLE = process.env.REMOTE_DEFAULT_ROLE || "viewer";
 const rbacOn = () => !!(REMOTES && REMOTES.roles);
-function reqUser(req) {                                  // {name,role} | null
+function reqUser(req) {                                  // {name,role,locations} | null
   const name = auth.userFromReq(req);
   if (!name) return null;
   const u = auth.loadUsers().find((x) => x.username === name);
-  return { name, role: (u && u.role) || DEFAULT_ROLE };
+  return { name, role: (u && u.role) || DEFAULT_ROLE, locations: u && u.locations };
+}
+// Akses per-lokasi (opt-in): user.locations absen / "*" → SEMUA lokasi; array → hanya yg terdaftar ([] = tak ada).
+function canLoc(user, locId) {
+  const a = user && user.locations;
+  if (a == null || a === "*") return true;
+  return Array.isArray(a) && a.includes(locId);
 }
 function canRemote(role, deviceKey) {
   if (!rbacOn()) return true;                            // RBAC nonaktif → izinkan
@@ -202,9 +208,10 @@ app.get("/brand.js", (_req, res) => { res.type("application/javascript").send(`w
 app.use(auth.middleware);
 
 // daftar tempat untuk frontend (URL WS upstream TIDAK diekspos)
-app.get("/api/locations", (_req, res) => {
+app.get("/api/locations", (req, res) => {
+  const u = reqUser(req);
   res.json({
-    locations: LOCATIONS.map((l) => ({
+    locations: LOCATIONS.filter((l) => canLoc(u, l.id)).map((l) => ({   // hanya lokasi yang diizinkan utk user ini
       id: l.id, name: l.name,
       scene3d: l.scene3d || "/scene.json", layout2d: l.layout2d || "/layout2d.json",
       // E5: lantai (opsional) — file per lantai, WS upstream tetap TIDAK diekspos
@@ -212,10 +219,11 @@ app.get("/api/locations", (_req, res) => {
     })),
   });
 });
-// status koneksi per lokasi (up/down) untuk tanda di dropdown
-app.get("/api/health", (_req, res) => {
+// status koneksi per lokasi (up/down) untuk tanda di dropdown — hanya lokasi yang diizinkan
+app.get("/api/health", (req, res) => {
+  const u = reqUser(req);
   const statuses = {};
-  for (const id in states) statuses[id] = states[id].up ? "up" : "down";
+  for (const id in states) if (canLoc(u, id)) statuses[id] = states[id].up ? "up" : "down";
   res.json({ statuses });
 });
 // kapabilitas remote per device (key = IP monitoring) — HANYA boolean ssh/vnc + label. TANPA host/kredensial.
@@ -255,6 +263,7 @@ wss.on("connection", (client, req) => {
   let loc;
   try { loc = findLoc(new URL(req.url, "http://x").searchParams.get("loc")); }
   catch { loc = LOCATIONS[0]; }
+  if (!canLoc(reqUser(req), loc.id)) { try { client.close(4403, "location forbidden"); } catch {} return; }   // gerbang lokasi (enforce server-side, bukan cuma sembunyikan dropdown)
   const st = states[loc.id];
   st.clients.add(client);
   if (client.readyState === WebSocket.OPEN) client.send(statusMsg(st.up));             // status sumber saat ini

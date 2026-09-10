@@ -1,0 +1,9 @@
+{
+  "_info": "Akun login Twinscape. Buat/ubah lewat CLI: node adduser.js <user> <pass> [--role <role>] [--loc <id,id|*>]. Password di-hash scrypt (salt+hash, JANGAN diisi manual). 'role' -> RBAC remote (lihat remotes.json). 'locations' -> akses lokasi (id dari locations.json): absen atau \"*\" = SEMUA lokasi; array = HANYA yang terdaftar; [] = tidak ada. File asli (users.json) di-gitignore.",
+  "users": [
+    { "username": "superadmin", "salt": "<scrypt-salt-hex>", "hash": "<scrypt-hash-hex>", "role": "admin" },
+    { "username": "operator-sugity", "salt": "<scrypt-salt-hex>", "hash": "<scrypt-hash-hex>", "role": "operator", "locations": ["sugity"] },
+    { "username": "operator-jmp", "salt": "<scrypt-salt-hex>", "hash": "<scrypt-hash-hex>", "locations": ["jmp"] },
+    { "username": "viewer-semua", "salt": "<scrypt-salt-hex>", "hash": "<scrypt-hash-hex>", "locations": "*" }
+  ]
+}
