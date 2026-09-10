@@ -138,11 +138,13 @@
   const statpanel = document.querySelector(".statpanel");
   if (statpanel) {
     const KEY = "pulse-statpanel-min";
+    const ICON_MIN = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><line x1="6" y1="12" x2="18" y2="12"/></svg>';   // minimize (garis)
+    const ICON_MAX = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linejoin="round"><rect x="5" y="5" width="14" height="14" rx="2.5"/></svg>';   // maximize (kotak)
     const mbtn = document.createElement("button");
     mbtn.type = "button"; mbtn.className = "sp-toggle";
     const syncMin = () => {
       const col = statpanel.classList.contains("collapsed");
-      mbtn.textContent = col ? "▾" : "▴";
+      mbtn.innerHTML = col ? ICON_MAX : ICON_MIN;
       mbtn.title = col ? "Perbesar panel" : "Kecilkan panel";
       mbtn.setAttribute("aria-label", mbtn.title);
     };
