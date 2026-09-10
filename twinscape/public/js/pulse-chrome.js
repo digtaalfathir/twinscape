@@ -15,8 +15,10 @@
     const page = view === "2d" ? "/floormap.html" : "/";
     const qs = new URLSearchParams();
     if (loc) qs.set("loc", loc);
-    if (floor) qs.set("floor", floor);
-    const fac = new URLSearchParams(location.search).get("factory");   // kawasan: bawa factory fokus lintas 3D↔2D
+    const cur = new URLSearchParams(location.search);         // kawasan: bawa factory+floor fokus (fresh) lintas 3D↔2D
+    const fl = cur.get("floor") || floor;
+    if (fl) qs.set("floor", fl);
+    const fac = cur.get("factory");
     if (fac) qs.set("factory", fac);
     qs.set("view", view);
     return `${page}?${qs.toString()}`;
