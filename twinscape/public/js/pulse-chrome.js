@@ -134,6 +134,28 @@
     });
   }
 
+  // ---- panel kiri: minimize (default TERBUKA; pilihan disimpan per-browser). Dipakai 3D & 2D. ----
+  const statpanel = document.querySelector(".statpanel");
+  if (statpanel) {
+    const KEY = "pulse-statpanel-min";
+    const mbtn = document.createElement("button");
+    mbtn.type = "button"; mbtn.className = "sp-toggle";
+    const syncMin = () => {
+      const col = statpanel.classList.contains("collapsed");
+      mbtn.textContent = col ? "▾" : "▴";
+      mbtn.title = col ? "Perbesar panel" : "Kecilkan panel";
+      mbtn.setAttribute("aria-label", mbtn.title);
+    };
+    try { if (localStorage.getItem(KEY) === "1") statpanel.classList.add("collapsed"); } catch (e) {}
+    mbtn.onclick = () => {
+      statpanel.classList.toggle("collapsed");
+      try { localStorage.setItem(KEY, statpanel.classList.contains("collapsed") ? "1" : "0"); } catch (e) {}
+      syncMin();
+    };
+    statpanel.appendChild(mbtn);
+    syncMin();
+  }
+
   // ---- E8: alert (toast + suara) saat device turun/pulih. Viewer memanggil window.pulseAlert(). ----
   const toastWrap = document.createElement("div");
   toastWrap.className = "toast-wrap";
