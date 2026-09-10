@@ -3375,7 +3375,7 @@
   {
    "x": 40,
    "z": -1,
-   "ip": "172.19.88.24",
+   "ip": "172.19.88.31",
    "label": "DCS Task Force",
    "factory": "f4",
    "floor": "l2",
@@ -3384,7 +3384,7 @@
   {
    "x": 40,
    "z": -4,
-   "ip": "172.19.88.99",
+   "ip": "172.19.88.24",
    "label": "DCS Repair Out Line",
    "factory": "f4",
    "floor": "l2",
@@ -3393,8 +3393,8 @@
   {
    "x": 40,
    "z": -7,
-   "ip": "172.19.88.29",
-   "label": "DCS Poles",
+   "ip": "172.19.88.16",
+   "label": "DCS Touch Up",
    "factory": "f4",
    "floor": "l2",
    "y": 16.7
@@ -3402,7 +3402,7 @@
   {
    "x": 33,
    "z": -3.5,
-   "ip": "172.19.88.20",
+   "ip": "172.19.88.29",
    "label": "DCS Repair In Line",
    "factory": "f4",
    "floor": "l2",
@@ -3411,7 +3411,7 @@
   {
    "x": 27,
    "z": -7.5,
-   "ip": "172.19.88.19",
+   "ip": "172.19.88.30",
    "label": "DCS QI",
    "factory": "f4",
    "floor": "l2",
@@ -3420,7 +3420,7 @@
   {
    "x": 27,
    "z": 1,
-   "ip": "172.19.88.16",
+   "ip": "172.19.88.19",
    "label": "DCS Playmaker",
    "factory": "f4",
    "floor": "l2",
@@ -3429,7 +3429,7 @@
   {
    "x": 23.5,
    "z": 4,
-   "ip": "172.19.88.30",
+   "ip": "172.19.88.21",
    "label": "DCS Mixing Material",
    "factory": "f4",
    "floor": "l2",
